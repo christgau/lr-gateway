@@ -1,0 +1,14 @@
+# yaml configration file
+#
+# vim: set softtabstop=4 shiftwidth=4 expandtab 
+
+connections:
+    datafeed:           "data://192.168.2.20:4433"
+    control:            "ctrl://192.168.2.20:4422"
+#    secondary_control:  "ctrl://localhost:4423"
+
+targets:
+    live:   "https://ec2.example.com/"
+    main:   "https://www.s14u.de/oris/backend/"
+    local:  "http://localhost/oris/backend/"
+    archive: "http://www.havel-regatta-verein.de/oris/backend/"
