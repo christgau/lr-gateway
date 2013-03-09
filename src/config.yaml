@@ -4,8 +4,7 @@
 
 connections:
     datafeed:           "data://192.168.2.20:4433"
-    control:            "ctrl://192.168.2.20:4422"
-#    secondary_control:  "ctrl://localhost:4423"
+    control:            "ctrl://*:4422"
 
 targets:
     live:   "https://ec2.example.com/"
