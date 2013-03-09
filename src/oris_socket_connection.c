@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <event2/http.h>
 #include <event2/event.h>
@@ -10,8 +11,14 @@
 #include "oris_log.h"
 #include "oris_connection.h"
 #include "oris_socket_connection.h"
+#include "oris_protocol.h"
+
+#define MAX_LINE_SIZE 4096
 
 static const int SOCKET_RECONNECT_TIMEOUT = 10; /* two seconds */
+
+static void oris_server_connection_do_accept(evutil_socket_t listener, short event, void *ctx); 
+static void oris_server_socket_event_cb(struct bufferevent *bev, short event, void *ctx);
 
 oris_socket_connection_t* oris_socket_connection_create(const char* name,
 		oris_protocol_t* protocol, struct evhttp_uri *uri,
@@ -111,7 +118,6 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 	} else {
 		oris_log_f(LOG_DEBUG, "connection '%s' event occurred: %x", connection->base.name, events);
 	}
-
 }
 
 bool oris_socket_connection_init(oris_socket_connection_t* connection, const char *name, 
@@ -160,5 +166,154 @@ void oris_socket_connection_free(oris_connection_t* connection)
 
 	oris_socket_connection_finalize((oris_socket_connection_t*) connection);
 	oris_connection_free(connection);
+}
+
+oris_server_connection_t* oris_server_connection_create(const char* name,
+		struct evhttp_uri *uri,	oris_libevent_base_info_t *info)
+{
+	struct sockaddr_in svr_addr;
+	oris_server_connection_t* retval;
+	int status;
+	
+	retval = calloc(1, sizeof(*retval));
+	if (!retval) {
+		perror("calloc");
+		oris_log_f(LOG_ERR, "could not create connection %s", name);
+		return NULL;
+	}
+
+	if (!oris_connection_init((oris_connection_t*) retval, name, NULL)) {
+		oris_log_f(LOG_ERR, "coult not init the connection %s", name);
+	}
+
+	((oris_connection_t*) retval)->destroy = oris_server_connection_free;
+
+	retval->base.uri = uri;
+	retval->base.libevent_info = info;
+
+	memset(&svr_addr, 0, sizeof(svr_addr));
+	svr_addr.sin_family = AF_INET;
+	svr_addr.sin_addr.s_addr = 0;
+	svr_addr.sin_port = htons(evhttp_uri_get_port(uri));
+
+	retval->socket = socket(AF_INET, SOCK_STREAM, 0);
+	if (retval->socket == -1) {
+		perror("socket");
+		oris_log_f(LOG_ERR, "could not create sever socket for %s", name);
+		free(retval);
+		return NULL;
+	}
+
+	evutil_make_socket_nonblocking(retval->socket);
+#ifndef WIN32
+	{
+		int one = 1;
+		setsockopt(retval->socket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	}
+#endif
+
+	status = bind(retval->socket, (struct sockaddr*) &svr_addr, sizeof(svr_addr));
+	if (status < 0) {
+		perror("bind");
+		oris_log_f(LOG_ERR, "could not bind %s to port %d (%d)", name, ntohs(svr_addr.sin_port), status);
+		free(retval);
+		return NULL;
+	}
+
+	if (listen(retval->socket, 8) < 0) {
+		perror("listen");
+		oris_log_f(LOG_ERR, "listen for %s failed", name);
+	}
+
+	retval->listen_event = event_new(info->base, retval->socket, EV_READ | EV_PERSIST,
+		oris_server_connection_do_accept, (void*) retval);
+	if (retval->listen_event == NULL) {
+		oris_log_f(LOG_ERR, "could not create event struct for %s", name);
+		close(retval->socket);
+		free(retval);
+		return NULL;
+	}
+
+	event_add(retval->listen_event, NULL);
+	oris_log_f(LOG_INFO, "server connection %s reday", name);
+	return retval;
+}
+
+static void oris_server_connection_do_accept(evutil_socket_t listener, short event, void *arg)
+{
+	oris_server_connection_t* connection = (oris_server_connection_t*) arg;
+	struct event_base* base = ((oris_socket_connection_t*) (connection))->libevent_info->base;
+	struct sockaddr_storage addr;
+	socklen_t slen = sizeof(addr);
+	int socket;
+
+	oris_log_f(LOG_INFO, "new connection on %s", connection->base.base.name);
+	socket = accept(listener, (struct sockaddr*)&addr, &slen); 
+	if (socket < 0) {
+		perror("accept");
+		oris_log_f(LOG_ERR, "could not accept new client from %s",
+				((oris_connection_t*) connection)->name);
+	} else if (socket > FD_SETSIZE) {
+		close(socket);
+	} else {
+		struct bufferevent* bev;
+
+		oris_log_f(LOG_INFO, "accepted connection");
+		evutil_make_socket_nonblocking(socket);
+		bev = bufferevent_socket_new(base, socket, BEV_OPT_CLOSE_ON_FREE);
+		bufferevent_setcb(bev, ((oris_connection_t*) connection)->protocol->read_cb, 
+				NULL, oris_server_socket_event_cb, connection);
+		bufferevent_setwatermark(bev, EV_READ, 0, MAX_LINE_SIZE);
+		bufferevent_enable(bev, EV_READ | EV_WRITE);
+		if (((oris_connection_t*) connection)->protocol->connected_cb) {
+			((oris_connection_t*) connection)->protocol->connected_cb(connection);
+		}
+	}
+}
+
+void oris_server_connection_free(oris_connection_t* connection)
+{
+	close(((oris_server_connection_t*) connection)->socket);
+	
+	oris_connection_finalize(connection);
+	free(connection);
+}
+
+oris_connection_t* oris_create_connection_from_uri(struct evhttp_uri* uri,
+		const char* connection_name, void* data)
+{
+	oris_connection_t* retval = NULL;
+	oris_protocol_t* protocol = oris_get_protocol_from_scheme(evhttp_uri_get_scheme(uri), data);
+	const char* scheme = evhttp_uri_get_scheme(uri);
+
+	if (protocol == NULL) { 
+		return NULL;
+	}
+
+	if (strcmp(scheme, "ctrl") == 0) {
+		retval = (oris_connection_t*) oris_server_connection_create(connection_name, uri, data);
+		if (retval) {
+			retval->protocol = protocol;
+		}
+	} else if (strcmp(scheme, "data") == 0) {
+		retval = (oris_connection_t*) oris_socket_connection_create(connection_name, protocol, uri, data);
+	}
+
+	return retval;
+}
+
+static void oris_server_socket_event_cb(struct bufferevent *bev, short event, void *ctx)
+{
+	oris_log_f(LOG_INFO, "event on server connection %d\n", event);
+
+	if (event & BEV_EVENT_EOF) {
+		oris_log_f(LOG_INFO, "connection to client closed");
+	} else if (event & BEV_EVENT_ERROR) {
+
+	} else if (event & BEV_EVENT_TIMEOUT) {
+
+	}
+
+	bufferevent_free(bev);
 }
 

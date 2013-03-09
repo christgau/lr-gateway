@@ -74,9 +74,8 @@ void oris_connection_free(oris_connection_t* connection)
 int oris_connections_parse_config(yaml_event_t event, void* data, int level, bool is_key)
 {
 	oris_connection_list_t *connections = ((oris_application_info_t*) data)->connections;
-	oris_libevent_base_info_t *libevent_info = &((oris_application_info_t*) data)->libevent_info;
+/*	oris_libevent_base_info_t *libevent_info = &((oris_application_info_t*) data)->libevent_info;*/
 	oris_connection_t* connection;
-	oris_protocol_t* protocol;
 
 	static bool in_connections = false;
 	static char *key = NULL;
@@ -95,17 +94,13 @@ int oris_connections_parse_config(yaml_event_t event, void* data, int level, boo
 		} else {
 			uri = evhttp_uri_parse((const char*) event.data.scalar.value);
 			if (uri) {
-				protocol = oris_get_protocol_from_scheme(evhttp_uri_get_scheme(uri), data);
-				if (protocol) {
-					oris_log_f(LOG_DEBUG, "new connection: %s -> %s", 
+				connection = oris_create_connection_from_uri(uri, key, data);
+				if (connection != NULL) {
+					oris_log_f(LOG_INFO, "new connection: %s -> %s", 
 						key, event.data.scalar.value);
-					connection = (oris_connection_t*) oris_socket_connection_create(key, 
-						protocol, uri, libevent_info);
 					oris_connections_add(connections, connection);
 				} else {
-					oris_log_f(LOG_ERR, "unsupported protocol %s", 
-						evhttp_uri_get_scheme(uri));
-					evhttp_uri_free(uri);
+					oris_log_f(LOG_ERR, "could not create connection %s", key);
 				}
 			} else {
 				oris_log_f(LOG_ERR, "invalid URI for connection %s: %s", 

@@ -45,13 +45,17 @@ void oris_free_and_null(void** ptr)
 bool oris_strtoint(const char* s, int* v)
 {
 	long lv;
+	char *endptr;
 
-	lv = strtol(s, (char**) NULL, 10);
+	errno = 0;
+	lv = strtol(s, &endptr, 10);
 
 	if (((lv == LONG_MIN || lv == LONG_MAX) && (errno != 0)) || 
-		(lv > INT_MAX || lv < INT_MIN)) {
+		(lv == 0 && errno != 0) ||
+		(lv > INT_MAX || lv < INT_MIN) ||
+		(endptr == s)) {
 		return false;
-	} else {
+	} else  {
 		*v = (int) lv;
 		return true; 
 	}

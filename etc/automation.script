@@ -1,29 +1,27 @@
 on connection established:
-	request event
+	request event;
 
-on table "ver":
-	http put /currentevent with value {VER.1}
+on table ver:
+	http put "/currentevent" with value {VER.1};
 
+on table vrd:
+	http put "/events/{VER.1}/comps/" with template competition;
+	request startlist_from_vrd for each entry;
 
-on table "vrd":
-	http put /events/{VER.1}/comps/ with template competition
-	request startlist for each entry
+on table stl:
+	http put "/events/{VER.1}/comps/{STL.1}/startlist/" with template startlist;
 
+on table res:
+	http put "/events/{VER.1}/comps/{RES.1}/results/" with template result;
 
-on table "stl":
-	http put /events/{VER.1}/comps/{STL.1}/startlist/ with template startlist
+on command "create event":
+	http put "/events/{VER.1}" with template event;
 
+template "competition":
+	id: {VRD.1}
+	label: "STRING" + 123 + {VRD.2} + TOKEN({VRD.2}, 1, "#")
 
-on table "res":
-	http put /events/{VER.1}/comps/{RES.1}/results/ with template result
+requests:
+	event: "?VER";
+	startlist_from_vrd: "?STL|" + {VRD.1} + "|" + {VRD.1};
 
-
-
-on command "create event"
-	http put /events/{VER.1} with template event
-
-
-
-template "competiton":
-	key: {VRD.1}
-	key: "STRING" + 123 + {VRD.2} + TOKEN({VRD.2}, 1, "#")

@@ -111,3 +111,21 @@ size_t oris_protocol_recv(struct evbuffer* input, char** buffer, size_t* buf_siz
 
 	return rlen;
 }
+
+oris_protocol_t* oris_protocol_clone(oris_protocol_t* src)
+{
+	oris_protocol_t* retval = oris_protocol_create();
+
+	if (retval != NULL) {
+		retval->name = strdup(src->name);
+		retval->data = src->data;
+		retval->destroy = src->destroy;
+		retval->read_cb = src->read_cb;
+		retval->connected_cb = src->connected_cb;
+		retval->disconnected_cb = src->disconnected_cb;
+	}
+	
+	return retval;
+}
+
+

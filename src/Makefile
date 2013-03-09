@@ -19,6 +19,7 @@ SOURCES=\
 	oris_protocol_ctrl.c \
 	oris_protocol_data.c \
 	oris_socket_connection.c \
+	oris_table.c \
 	oris_log.c \
 	oris_util.c
 
@@ -27,7 +28,8 @@ OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
 
 .PHONY: clean grammar
 
-all: $(TARGET) grammar
+all: $(TARGET) 
+#grammar
 
 $(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) -o $@

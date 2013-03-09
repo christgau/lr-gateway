@@ -46,4 +46,10 @@ oris_protocol_t* oris_get_protocol_from_scheme(const char* scheme, void *data);
 
 size_t oris_protocol_recv(struct evbuffer* input, char** buffer, size_t* buf_size,
 	size_t* buf_capacity);
+
+/**
+ * clone a protocol instance
+ */
+oris_protocol_t* oris_protocol_clone(oris_protocol_t* src);
+
 #endif /* __ORIS_PROTOCOL_H */

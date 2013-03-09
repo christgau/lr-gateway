@@ -1,4 +1,6 @@
 #include <string.h>
+#include <unistd.h>
+#include <limits.h>
 #include <event2/bufferevent.h>
 
 #include "oris_protocol_ctrl.h"
@@ -9,43 +11,35 @@
 #define LINE_DELIM_CR 0x0D
 #define LINE_DELIM_LF 0x0A
 
-static void process_command(const char* cmd, oris_application_info_t* info);
+static void process_command(const char* cmd, oris_application_info_t* info,
+	struct evbuffer* output);
 
 void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 {
 	oris_connection_t* con = ctx;
 	oris_ctrl_protocol_data_t* pdata = (oris_ctrl_protocol_data_t*) con->protocol->data;
 
-	struct evbuffer* input = bufferevent_get_input(bev);
-	char *p, *bufstart;
+	struct evbuffer* input, *output; 
+	char* line;
+	size_t n;
 
-	/* receive and return if nothing was recevied */
-	if (oris_protocol_recv(input, &pdata->buffer, &pdata->buf_size, &pdata->buf_capacity) == 0) {
-		return;
+	input = bufferevent_get_input(bev);
+	output = bufferevent_get_output(bev);
+
+	while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_LF))) {
+		process_command(line, pdata->info, output);
+		evbuffer_add(output, "\r\n", 2);
+		free(line);
 	}
 
-	/* process da data */
-	bufstart = pdata->buffer;
-	while (pdata->buf_size > 0 && (p = memchr(bufstart, LINE_DELIM_CR, pdata->buf_size))) {
-		*p = '\0';
-		process_command(bufstart, pdata->info);
-		
-		pdata->buf_size -= (p - bufstart) + 1;
-		bufstart = ++p;
-
-		if (pdata->buf_size > 0 && *p == LINE_DELIM_LF) {
-			pdata->buf_size--;
-			bufstart++;
-		}
-	}
-
-	/* move unprocessed data to the beginning of the buffer */
-	if (pdata->buf_size > 0) {
-		memmove(bufstart, pdata->buffer, pdata->buf_size);
+	if (evbuffer_get_length(input) > sysconf(_SC_PAGESIZE)) {
+		evbuffer_add_printf(output, "Sorry, line too long\r\n");
+		evbuffer_drain(input, evbuffer_get_length(input));
 	}
 }
 
-static void process_command(const char* cmd, oris_application_info_t* info)
+static void process_command(const char* cmd, oris_application_info_t* info, 
+	struct evbuffer* output)
 {
 	oris_log_f(LOG_INFO, "got command >%s<", cmd);
 	if (strcmp(cmd, "terminate") == 0 || strcmp(cmd, "exit") == 0) {
