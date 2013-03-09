@@ -18,6 +18,7 @@ typedef struct oris_libevent_base_info {
 	struct evdns_base *dns_base;
 } oris_libevent_base_info_t;
 
+
 typedef struct oris_application_info {
 	oris_libevent_base_info_t libevent_info;
 	oris_connection_list_t* connections;
@@ -36,5 +37,16 @@ typedef struct oris_application_info {
 	int argc;
 	char** argv;
 } oris_application_info_t;
+
+
+bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size);
+
+
+/* void oris_free_and_null(void** ptr);*/ 
+
+#define oris_free_and_null(ptr) do { free(ptr); ptr = NULL;  } while (0);
+
+bool oris_strtoint(const char* s, int* v);
+
 
 #endif /* __ORIS_UTIL_H */

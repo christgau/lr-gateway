@@ -3,12 +3,14 @@
 #include "oris_protocol_data.h"
 #include "oris_util.h"
 #include "oris_log.h"
+#include "oris_table.h"
 
 #define LINE_DELIM_START 0x02
 #define LINE_DELIM_END   0x03
 #define RECORD_DELIM     '|'
 
 static void process_line(char* line, oris_application_info_t* info);
+static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
 
 void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -53,9 +55,10 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 
 static void process_line(char* line, oris_application_info_t* info)
 {
-/*	oris_log_f(LOG_INFO, "got line: %s", line);*/
-	char *s, *c;
-	int rec_count = 1;
+	oris_table_t* tbl;
+	char *s, *c, *tbl_name;
+	size_t last_char_index;
+	bool is_last_line, is_response_line;
 
 	if (strlen(line) == 0) {
 		return;
@@ -63,13 +66,48 @@ static void process_line(char* line, oris_application_info_t* info)
 
 	s = strdup(line);
 	c = s;
-	for (; *c; c++) {
-		if (*c == RECORD_DELIM) {
-			*c = '\0';
-			rec_count++;
-		}
+
+	/* extract table name */
+	while (*c && *c != RECORD_DELIM) {
+		c++;
 	}
 
-	oris_log_f(LOG_INFO, "line with %d records", rec_count);
+	if (*c == '\0') {
+		return;
+	}
+
+	*c = '\0';
+	tbl_name = s;
+
+	tbl = oris_get_or_create_table(NULL, tbl_name, true);
+	if (!tbl) {
+		free(line);
+		return;
+	}
+
+	last_char_index = strlen(tbl_name);
+	is_last_line = tbl_name[last_char_index] == '1';
+	is_response_line = tbl_name[last_char_index] == '!';
+
+	if (is_response_line || (tbl->state == COMPLETE && !is_last_line)) {
+		oris_table_clear(tbl);
+	}
+
+	oris_table_add_row(tbl, s + last_char_index + 1, ORIS_TABLE_ITEM_SEPERATOR);
+	tbl->state = (is_response_line || is_last_line) ? COMPLETE : RECEIVING;
+	if (tbl->state == COMPLETE) {
+		table_complete_cb(tbl, info);
+	}
+
+	free(s);
+	return;
 }
 
+static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info)
+{
+	oris_log_f(LOG_INFO, "table %s received", tbl->name);
+
+	/* here comes the magic (!) -> call Antlr stuff */
+
+	return;
+}
