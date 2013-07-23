@@ -3,9 +3,10 @@
 
 #include <stdbool.h>
 #include <event2/http.h>
-#include <yaml.h>
 
 #include "oris_protocol.h"
+
+typedef void (*oris_data_write_fn_t) (const void* connection, const void* buf, size_t count);
 
 typedef struct oris_connection { 
 	/* name of the connection */
@@ -17,6 +18,8 @@ typedef struct oris_connection {
 	struct oris_protocol* protocol;
 	/* pointer to destructor */
 	void (*destroy)(struct oris_connection*);
+    /* this is a virtual method that actually writes to the connection */
+    oris_data_write_fn_t write;
 } oris_connection_t;
 
 typedef struct oris_connection_list {
@@ -24,18 +27,13 @@ typedef struct oris_connection_list {
 	size_t count;
 } oris_connection_list_t;
 
-typedef struct oris_http_target {
-	char* name;
-	struct evhttp_uri* uri;
-} oris_http_target_t;
-
 /* life-cycle functions */
 
 /**
  * oris_connection_new
  *
  * create a new connection with the given name using the specified protocol
- *
+ * 
  * @param name char* 
  * @param protocol oris_protocol_t
  * @return oris_connection_t* 
@@ -48,6 +46,12 @@ oris_connection_t* oris_connection_create(const char* name, struct oris_protocol
  */
 bool oris_connection_init(oris_connection_t* connection, const char* name, 
 		struct oris_protocol* protocol);
+
+
+/**
+ * send data via protocol (encapsulate stuff) and connection (actual media transfer)
+ */
+void oris_connection_send(oris_connection_t* connection, const void* buf, size_t buf_size);
 
 /**
  * finalize connection
@@ -71,24 +75,18 @@ void oris_connection_free(oris_connection_t* connection);
  */
 void oris_connections_add(oris_connection_list_t* list, oris_connection_t* connection);
 
+/**
+ * sends the buffer/buf_size to all connections having a protocol with the given name 
+ */
+void oris_connections_send(oris_connection_list_t* list, const char* proto_name, 
+    const void* buf, size_t buf_size);
 
 /**
  * clear the connection list
  */
 void oris_connections_clear(oris_connection_list_t* list);
 
-/**
- * oris_connections_parse_config
- *
- * parses the configuration and creates connections accordingly
- */
-int oris_connections_parse_config(yaml_event_t event, void* data, int level, 
-	bool is_key);
-
-
-void oris_targets_clear(oris_http_target_t* targets, int *count);
-
-int oris_targets_parse_config(yaml_event_t event, void* data, int level, 
-	bool is_key);
+/* clear and free list  */
+void oris_free_connections(oris_connection_list_t *list);
 
 #endif /* __ORIS_CONNECTION_H */

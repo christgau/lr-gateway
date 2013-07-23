@@ -1,17 +1,23 @@
-#ifndef __ORIS_CONFIGURATION
-#define __ORIS_CONFIGURATION
+#ifndef __ORIS_CONFIGURATION_H
+#define __ORIS_CONFIGURATION_H
 
 #include <stdbool.h>
-#include <yaml.h>
-#include "oris_util.h"
+#include <antlr3treeparser.h>
 
-extern const oris_error_t ORIS_YAML_ERROR;
-extern const oris_error_t ORIS_CONFIG_ERROR;
+#include "oris_app_info.h"
+#include "oris_automation_types.h"
 
-/** callback invoked by the parser */
-typedef int(*oris_config_parse_cb_t)(yaml_event_t event, void* data, int level, bool is_key);
+/* load configuration from the config file */
+bool oris_load_configuration(oris_application_info_t* info);
 
-/** parses a config file */
-int oris_config_parse(oris_config_parse_cb_t callback, void* data);
+/* init finalization stuff */
+void oris_configuration_init(void);
+void oris_configuration_finalize(void);
 
-#endif /* __ORIS_CONFIGURATION */
+void oris_configuration_perform_automation(oris_automation_event_t* event, oris_application_info_t* info);
+
+pANTLR3_BASE_TREE oris_get_request_tree(const char* name);
+char* oris_parse_request_tree(const pANTLR3_BASE_TREE parse_tree);
+char* oris_get_parsed_request(const char *name);
+
+#endif /* __ORIS_CONFIGURATION_H */

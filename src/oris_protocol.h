@@ -4,16 +4,15 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 
-#include "oris_connection.h"
-
 typedef struct oris_protocol {
 	char* name;
 	void* data;
 	void (*destroy)(struct oris_protocol*);
 	/* callbacks */
 	bufferevent_data_cb read_cb;
-	void (*connected_cb)(void*);
+	void (*connected_cb)(struct oris_protocol*);
 	void (*disconnected_cb)(void);
+    void (*write)(const void* buf, size_t bufsize, void* con, void* transfer_fn);
 } oris_protocol_t;
 
 /**

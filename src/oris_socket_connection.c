@@ -17,6 +17,7 @@
 
 static const int SOCKET_RECONNECT_TIMEOUT = 10; /* two seconds */
 
+static void oris_socket_connection_write(void* connection, const void* buf, size_t bufsize);
 static void oris_server_connection_do_accept(evutil_socket_t listener, short event, void *ctx); 
 static void oris_server_socket_event_cb(struct bufferevent *bev, short event, void *ctx);
 
@@ -43,9 +44,17 @@ oris_socket_connection_t* oris_socket_connection_create(const char* name,
 		return NULL;
 	}
 
+	retval->base.write = (void*) oris_socket_connection_write;
+
 	return retval;
 }
 
+static void oris_socket_connection_write(void* connection, const void* buf, 
+	size_t bufsize)
+{
+	bufferevent_write(((oris_socket_connection_t*) connection)->bufev, 
+		buf, bufsize);
+}
 
 static void oris_connection_read_cb(struct bufferevent *bev, void *ptr)
 {
@@ -63,6 +72,7 @@ static void oris_connection_reconnect_timer_cb(evutil_socket_t fd, short event, 
 	oris_socket_connection_t* connection = arg;
 
 	event_free(connection->reconnect_timeout_event);
+	connection->reconnect_timeout_event = NULL;
 
 	oris_log_f(LOG_INFO, "connection '%s': reconnect to %s:%d", connection->base.name, 
 			evhttp_uri_get_host(connection->uri), 
@@ -72,6 +82,9 @@ static void oris_connection_reconnect_timer_cb(evutil_socket_t fd, short event, 
 		connection->libevent_info->dns_base, AF_UNSPEC, 
 		evhttp_uri_get_host(connection->uri), 
 		evhttp_uri_get_port(connection->uri));
+
+	fd = fd;
+	event = event;
 }
 
 
@@ -79,11 +92,12 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 {
 	struct timeval timeout;
 	oris_socket_connection_t* connection = arg;
+	oris_log_f(LOG_INFO, "%d", events);
 
 	if (events & BEV_EVENT_CONNECTED) {
-		oris_log_f(LOG_INFO, "connection '%s' connected", connection->base.name);	
+		oris_log_f(LOG_INFO, "connection '%s' connected %d", connection->base.name, events);	
 		if (connection->base.protocol->connected_cb) {
-			connection->base.protocol->connected_cb(connection);
+			connection->base.protocol->connected_cb(connection->base.protocol);
 		}
 	} else if (events & (BEV_EVENT_ERROR | BEV_EVENT_EOF)) {
 		if (events & BEV_EVENT_ERROR) {
@@ -147,23 +161,27 @@ bool oris_socket_connection_init(oris_socket_connection_t* connection, const cha
 
 void oris_socket_connection_finalize(oris_socket_connection_t* connection)
 {
+	oris_socket_connection_t* sc = (oris_socket_connection_t*) connection;
 	oris_connection_finalize((oris_connection_t*) connection);
+
+	if (sc->uri != NULL) {
+		evhttp_uri_free(sc->uri);
+		sc->uri = NULL;
+	}
+
+	if (sc->bufev != NULL) {
+		bufferevent_free(sc->bufev);
+		sc->bufev = NULL;
+	}
+
+	if (sc->reconnect_timeout_event != NULL) {
+		event_free(sc->reconnect_timeout_event);
+		sc->reconnect_timeout_event = NULL;
+	}
 }
 
 void oris_socket_connection_free(oris_connection_t* connection)
 {
-	if (((oris_socket_connection_t*) connection)->uri != NULL) {
-		evhttp_uri_free(((oris_socket_connection_t*) connection)->uri);
-	}
-
-	if (((oris_socket_connection_t*) connection)->bufev != NULL) {
-		bufferevent_free(((oris_socket_connection_t*) connection)->bufev);
-	}
-
-	if (((oris_socket_connection_t*) connection)->reconnect_timeout_event != NULL) {
-		event_free(((oris_socket_connection_t*) connection)->reconnect_timeout_event);
-	}
-
 	oris_socket_connection_finalize((oris_socket_connection_t*) connection);
 	oris_connection_free(connection);
 }
@@ -178,12 +196,12 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 	retval = calloc(1, sizeof(*retval));
 	if (!retval) {
 		perror("calloc");
-		oris_log_f(LOG_ERR, "could not create connection %s", name);
+		oris_log_f(LOG_ERR, "could not create connection '%s'", name);
 		return NULL;
 	}
 
 	if (!oris_connection_init((oris_connection_t*) retval, name, NULL)) {
-		oris_log_f(LOG_ERR, "coult not init the connection %s", name);
+		oris_log_f(LOG_ERR, "coult not init the connection '%s'", name);
 	}
 
 	((oris_connection_t*) retval)->destroy = oris_server_connection_free;
@@ -199,7 +217,7 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 	retval->socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (retval->socket == -1) {
 		perror("socket");
-		oris_log_f(LOG_ERR, "could not create sever socket for %s", name);
+		oris_log_f(LOG_ERR, "could not create sever socket for connection '%s'", name);
 		free(retval);
 		return NULL;
 	}
@@ -235,7 +253,7 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 	}
 
 	event_add(retval->listen_event, NULL);
-	oris_log_f(LOG_INFO, "server connection %s reday", name);
+	oris_log_f(LOG_INFO, "server connection '%s' ready", name);
 	return retval;
 }
 
@@ -258,7 +276,7 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 	} else {
 		struct bufferevent* bev;
 
-		oris_log_f(LOG_INFO, "accepted connection");
+		oris_log_f(LOG_DEBUG, "accepted connection");
 		evutil_make_socket_nonblocking(socket);
 		bev = bufferevent_socket_new(base, socket, BEV_OPT_CLOSE_ON_FREE);
 		bufferevent_setcb(bev, ((oris_connection_t*) connection)->protocol->read_cb, 
@@ -266,16 +284,21 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 		bufferevent_setwatermark(bev, EV_READ, 0, MAX_LINE_SIZE);
 		bufferevent_enable(bev, EV_READ | EV_WRITE);
 		if (((oris_connection_t*) connection)->protocol->connected_cb) {
-			((oris_connection_t*) connection)->protocol->connected_cb(connection);
+			((oris_connection_t*) connection)->protocol->connected_cb(((oris_connection_t*) connection)->protocol);
 		}
 	}
+
+	event = event;
 }
 
 void oris_server_connection_free(oris_connection_t* connection)
 {
 	close(((oris_server_connection_t*) connection)->socket);
-	
-	oris_connection_finalize(connection);
+	if (((oris_server_connection_t*) connection)->listen_event) {
+		event_free(((oris_server_connection_t*) connection)->listen_event);
+	}
+
+	oris_socket_connection_finalize(&((oris_server_connection_t*)  connection)->base);
 	free(connection);
 }
 
@@ -304,16 +327,17 @@ oris_connection_t* oris_create_connection_from_uri(struct evhttp_uri* uri,
 
 static void oris_server_socket_event_cb(struct bufferevent *bev, short event, void *ctx)
 {
-	oris_log_f(LOG_INFO, "event on server connection %d\n", event);
+	oris_log_f(LOG_DEBUG, "event on server connection %d\n", event);
 
 	if (event & BEV_EVENT_EOF) {
-		oris_log_f(LOG_INFO, "connection to client closed");
+		oris_log_f(LOG_DEBUG, "connection to client closed");
 	} else if (event & BEV_EVENT_ERROR) {
 
 	} else if (event & BEV_EVENT_TIMEOUT) {
 
 	}
 
+	ctx = ctx;
 	bufferevent_free(bev);
 }
 

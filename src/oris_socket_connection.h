@@ -19,6 +19,7 @@ typedef struct oris_socket_connection {
 	oris_libevent_base_info_t* libevent_info;
 	
 	struct event* reconnect_timeout_event;
+    
 } oris_socket_connection_t;
 
 typedef struct oris_server_connection {

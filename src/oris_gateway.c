@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #ifndef _WINDOWS
 #include <getopt.h>
@@ -12,11 +13,11 @@
 #include <event2/dns.h>
 
 #include "oris_log.h"
-#include "oris_util.h"
-#include "oris_connection.h"
+#include "oris_app_info.h"
 #include "oris_configuration.h"
 #include "oris_protocol.h"
 #include "oris_socket_connection.h"
+#include "oris_interpret_tools.h"
 
 static void oris_libevent_log_cb(int severity, const char* msg)
 {
@@ -51,6 +52,10 @@ static void oris_sigint_cb(evutil_socket_t fd, short type, void *arg)
 	fflush(stdout);
 
 	event_base_loopbreak(base);
+
+	/* keep compiler happy */
+	fd = fd;
+	type = type;
 }
 
 static int oris_init_libevent(struct oris_application_info *info)
@@ -70,35 +75,28 @@ static int oris_init_libevent(struct oris_application_info *info)
 	}
 }
 
-void oris_free_connections(oris_connection_list_t *list)
-{
-	oris_connections_clear(list);
-
-	free(list->items);
-	list->items = NULL;
-	list->count = 0;
-}
-
-
 int oris_main_default(oris_application_info_t *info)
 {
-	/* load http targets */
-	oris_config_parse(&oris_targets_parse_config, info);
-	if (info->targets.count == 0) {
-		oris_log_f(LOG_ERR, "no http targets defined. Exiting");
-		return EXIT_FAILURE;
-	}
-
 	/* prepare libevent stuff */
 	if (oris_init_libevent(info)) {
 		oris_log_f(LOG_ERR, "could not init libevent. Exiting\n");
 		return EXIT_FAILURE;
 	}
 
-	/* load, init and open connections */
-	info->connections = (oris_connection_list_t*) calloc(1, sizeof(oris_connection_list_t));
-	oris_config_parse(&oris_connections_parse_config, info);
-	if (info->connections->count == 0) {
+	info->paused = true;
+
+	oris_tables_init(&info->data_tables);
+	oris_interpreter_init(&info->data_tables);
+
+	oris_app_info_init(info);
+	oris_configuration_init();
+
+	if (!oris_load_configuration(info)) {
+		oris_log_f(LOG_ERR, "failed to load configuration");
+		return EXIT_FAILURE;
+	}
+
+	if (info->connections.count == 0) {
 		oris_log_f(LOG_ERR, "no connections available. Exiting.\n");
 		return EXIT_FAILURE;
 	}
@@ -107,11 +105,8 @@ int oris_main_default(oris_application_info_t *info)
 	event_base_dispatch(info->libevent_info.base);
 
 	/* cleanup */
-	oris_free_connections(info->connections);
-	free(info->connections);
-
-	oris_targets_clear(info->targets.items, &(info->targets.count));
-	free(info->targets.items);
+	oris_interpreter_finalize();
+	oris_tables_finalize(&info->data_tables);
 
 	event_free(info->sigint_event);
 	evdns_base_free(info->libevent_info.dns_base, 0);
@@ -123,6 +118,9 @@ int oris_main_default(oris_application_info_t *info)
 	libevent_global_shutdown();
 #endif
 
+	oris_configuration_finalize();
+	oris_app_info_finalize(info);
+
 	return EXIT_SUCCESS;
 }
 
@@ -131,6 +129,7 @@ int oris_main_print_version(oris_application_info_t *info)
 {
 	printf("oris gateway version %s with libevent %s\n", ORIS_VERSION, event_get_version());
 
+	info = info;
 	return EXIT_SUCCESS;
 }
 
@@ -192,8 +191,9 @@ bool oris_handle_args(oris_application_info_t *info)
 int main(int argc, char **argv)
 {
 	int retval;
-	oris_application_info_t info = { { NULL, NULL } };
+	oris_application_info_t info;
 
+	memset(&info, 0, sizeof(info));
 	info.argc = argc;
 	info.argv = argv;
 

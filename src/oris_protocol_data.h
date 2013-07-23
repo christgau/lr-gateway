@@ -12,6 +12,8 @@ typedef struct oris_data_protocol_data {
 	size_t buf_capacity;
 } oris_data_protocol_data_t;
 
+void oris_protocol_data_init(struct oris_protocol* self);
 void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx);
+void oris_protocol_data_connected_cb(struct oris_protocol* self);
 
 #endif /* __ORIS_PROTOCOL_DATA_H */

@@ -24,8 +24,10 @@ tokens {
 	TABLE='table';
 	COMMAND='command';
 	CONNECTION='connection';
+	CONNECTIONS='connections';
 	ESTABLISHED='established';
 	CLOSED='closed';
+	TARGETS='targets';
 	TEMPLATE='template';
 	REQUESTS='requests';
 	REQUEST='request';
@@ -42,13 +44,16 @@ tokens {
 }
 
 configuration
-	: (statement)* -> ^(CONFIG statement*)
+//	: connections targets (statement)* (template_definition)* (request_definition)? -> ^(CONFIG connections targets statement* template_definition* request_definition?)
+	: connections targets (event)* (template_definition)* (requests_definition)?-> ^(CONFIG connections targets event* template_definition* requests_definition?) 
 	;
 
-statement
-	: event
-/*	| template_definition */
-	| request_definition
+connections
+	: CONNECTIONS^ COLON! kv_list
+	;
+
+targets
+	: TARGETS^ COLON! kv_list
 	;
 
 event
@@ -91,7 +96,6 @@ http_method
 	| 'delete'
 	;
 	
-
 template_definition
 	: TEMPLATE^ IDENTIFIER COLON! kv_list? SEMICOLON!
 	;

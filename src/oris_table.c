@@ -67,9 +67,10 @@ void oris_table_finalize(oris_table_t* tbl)
 	}
 }
 
-static size_t oris_table_get_field_index(oris_table_t* tbl, const char* field)
+static int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 {
-	int i, retval = 0;
+	int retval = 0;
+	size_t i;
 	char *name;
 
 	/* check if field is an integer */
@@ -90,26 +91,25 @@ static size_t oris_table_get_field_index(oris_table_t* tbl, const char* field)
 	return -1;
 }
 
-const char* oris_table_get_field(oris_table_t* tbl, const char* field)
+static const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index)
 {
 	oris_table_row_t* row; 
-	size_t index, i;
 	char* retval;
+    int i;
 
 	if (tbl == NULL || tbl->row_count == 0) {
 		return NULL;
 	} 
-	
-	index = oris_table_get_field_index(tbl, field);
-	if (index < 0 || index > tbl->field_count) {
-		return NULL;
-	}
 
 	if (tbl->current_row == -1) {
 		tbl->current_row = 0;
 	}
 
 	row = &(tbl->rows[tbl->current_row]);
+	if (index < 0 || index > (int) tbl->field_count) {
+		return NULL;
+	}
+
 	retval = row->buffer;
 	if (retval) {
 		for (i = 0; i < index; i++) {
@@ -120,8 +120,38 @@ const char* oris_table_get_field(oris_table_t* tbl, const char* field)
 	return retval;
 }
 
+const char* oris_table_get_field(oris_table_t* tbl, const char* field)
+{
+	int index;
+
+	if (tbl == NULL || tbl->row_count == 0) {
+		return NULL;
+	} 
+	
+	index = oris_table_get_field_index(tbl, field);
+
+    return oris_table_get_field_by_index(tbl, index);
+}
+
 
 /* table list functions */
+void oris_tables_init(oris_table_list_t* list)
+{
+	list->count = 0;
+	list->tables = NULL;
+}
+
+void oris_tables_finalize(oris_table_list_t* list)
+{
+	size_t i;
+
+	for (i = 0; i < list->count; i++) {
+		oris_table_finalize(&list->tables[i]);
+	}
+
+	list->count = 0;
+}
+
 oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list, 
 	const char * name, bool create)
 {
@@ -134,7 +164,7 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	}
 
 	/* nothing found, create new table */
-	if (oris_safe_realloc((void**) &(tbl_list->tables), tbl_list->count, sizeof(*(tbl_list->tables)))) {
+	if (create && oris_safe_realloc((void**) &(tbl_list->tables), tbl_list->count, sizeof(*(tbl_list->tables)))) {
 
 		/* find correct position in table list and shift array if */
 		if (tbl_list->count > 0) {
@@ -150,6 +180,7 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 
 		tbl_list->count++;
 		oris_table_init(&(tbl_list->tables[i]));
+		tbl_list->tables[i].name = strdup(name);
 
 		return &(tbl_list->tables[i]);
 	} else {
@@ -159,6 +190,16 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 
 
 /* misc/shortcut functions */
+const char* oris_tables_get_field_by_number(oris_table_list_t* list, 
+    const char* name, const int index)
+{
+	oris_table_t* tbl;
+	
+	tbl = oris_get_table(list, name);
+
+	return (tbl != NULL ? oris_table_get_field_by_index(tbl, index) : NULL);
+}
+
 const char* oris_tables_get_field(oris_table_list_t* list, const char* name, 
 	const char* field)
 {

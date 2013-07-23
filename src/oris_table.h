@@ -2,6 +2,7 @@
 #define __ORIS_TABLE_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define ORIS_TABLE_ITEM_SEPERATOR '|'
 
@@ -19,7 +20,7 @@ typedef struct oris_table {
 	char* name;
 	char* field_names;
 	size_t field_count;
-	size_t current_row;
+	int current_row;
 	size_t row_count;
 	oris_table_recv_state state;
 	oris_table_row_t* rows;
@@ -45,13 +46,22 @@ const char* oris_table_get_field(oris_table_t* tbl, const char* field);
 
 
 /* table list functions */
+void oris_tables_init(oris_table_list_t* list);
+void oris_tables_finalize(oris_table_list_t* list);
+
 oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list, 
 	const char * name, bool create);
 
-#define oris_get_table(tbl, name) oris_get_or_create_table(tbl, name, false) 
+#define oris_get_table(tbls, name) oris_get_or_create_table(tbls, name, false) 
 
 /* misc/shortcut functions */
+const char* oris_tables_get_field_by_index(oris_table_list_t* list, 
+    const char* name, const int index);
+
 const char* oris_tables_get_field(oris_table_list_t* list, const char* name, 
 	const char* field);
+
+const char* oris_tables_get_field_by_number(oris_table_list_t* list, 
+    const char* name, const int index);
 
 #endif

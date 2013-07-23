@@ -1,50 +1,72 @@
 CC=gcc
+AR=ar
 RM=rm -rf
 ANTLR=antlr3
 
-INCLUDEPATHS=-I$(HOME)/include -I.
-LDFLAGS=-g -levent -lyaml -L$(HOME)/lib
-CFLAGS=-g -Wall -pedantic -O0 $(INCLUDEPATHS)
+INCLUDEPATHS=-I$(HOME)/include -I. -I./deps/mempool -I./grammars
+WARNFLAGS=-Wall -Wextra
+CFLAGS=-g -O0 $(INCLUDEPATHS)
+
+ANTLR_LIB=$(HOME)/opt/antlr-3.4/lib
+LDFLAGS=-g -levent -L$(HOME)/lib -L$(ANTLR) -lantlr3c
 
 TARGET=gateway
 MAINFILE=oris_gateway.c
-HEADERS=*.h
 
 ANTLR_CP=/usr/share/antlr-3/lib/antlr3.jar
 
 SOURCES=\
-	oris_connection.c \
+	oris_app_info.c \
+	oris_automation.c \
 	oris_configuration.c \
+	oris_connection.c \
+	oris_kvpair.c \
+	oris_log.c \
 	oris_protocol.c \
 	oris_protocol_ctrl.c \
 	oris_protocol_data.c \
 	oris_socket_connection.c \
 	oris_table.c \
-	oris_log.c \
-	oris_util.c
+	oris_util.c \
+	deps/mempool/mem_pool.c \
+	grammars/oris_interpret_tools.c 
 
 OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
+HEADERS=$(patsubst %.c,%.h,$(SOURCES))
 
+
+GRAMMAR_SRC=\
+	grammars/configLexer.c \
+	grammars/configParser.c \
+	grammars/configTree.c
+
+GRAMMAR_ARCHIVE=grammars/config.ar
 
 .PHONY: clean grammar
 
 all: $(TARGET) 
 #grammar
 
-$(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) -o $@
-
 %.o: %.c %.h
 	@echo "CC    $<"
-	@$(CC) $(CFLAGS) -c $< -o $@ #>/dev/null
+	@$(CC) $(WARNFLAGS) $(CFLAGS) -c $< -o $@ #>/dev/null
 
-grammar: grammars/oris_automation.g
-	CLASSPATH=$(ANTLR_CP) $(ANTLR) $< 
+$(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS) $(GRAMMAR_ARCHIVE)
+	$(CC) $(WARNFLAGS) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
+
+$(GRAMMAR_ARCHIVE): $(GRAMMAR_SRC)
+	for FILE in $(GRAMMAR_SRC); do $(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
+	$(AR) cr $@ $(patsubst %.c,%.o,$^)
+
+#grammar: grammars/oris_automation.g
+#	CLASSPATH=$(ANTLR_CP) $(ANTLR) $< 
+
 
 
 clean:
 	$(RM) $(TARGET)
 	$(RM) $(OBJECTS) 
+	$(RM) $(GRAMMAR_ARCHIVE)
 	$(RM) tags
 
 tags: $(SOURCES)

@@ -5,7 +5,8 @@
 
 #include "oris_interpret_tools.h"
 #include "oris_util.h"
-#include "expr_eval.h"
+#include "oris_table.h"
+#include "configParser.h"
 
 #ifdef __GNUC__
 #include <locale.h>
@@ -15,17 +16,17 @@
 
 mem_pool_t* oris_expr_mem_pool = NULL;
 
-typedef oris_grammar_expr_value_t*(*builtin_func_impl_t) (pANTLR3_LIST args);
+typedef oris_parse_expr_t*(*builtin_func_impl_t) (pANTLR3_LIST args);
 
 typedef struct {
 	char* name;
 	builtin_func_impl_t f;
-	int num_args;
-	int opt_args;
+	size_t num_args;
+	size_t opt_args;
 } oris_builtin_func_t;
 
-static oris_grammar_expr_value_t* oris_built_in_length(pANTLR3_LIST args);
-static oris_grammar_expr_value_t* oris_built_in_quote(pANTLR3_LIST args);
+static oris_parse_expr_t* oris_built_in_length(pANTLR3_LIST args);
+static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args);
 
 static oris_builtin_func_t oris_builtin_funcs[] = {
 	{ "LENGTH", oris_built_in_length, 1, 0 },
@@ -39,8 +40,9 @@ static oris_builtin_func_t oris_builtin_funcs[] = {
 };
 
 static pANTLR3_STRING_FACTORY strFactory = NULL;
+static oris_table_list_t* data_tbls;
 
-bool oris_interpreter_init(void)
+bool oris_interpreter_init(oris_table_list_t* tbls)
 {
 	setlocale(LC_CTYPE, "");
 	strFactory = antlr3StringFactoryNew(ANTLR3_ENC_UTF8);
@@ -48,7 +50,9 @@ bool oris_interpreter_init(void)
 		return false;
 	}
 
-	oris_expr_mem_pool = create_mem_pool(sizeof(oris_grammar_expr_value_t));
+	oris_expr_mem_pool = create_mem_pool(sizeof(oris_parse_expr_t));
+	data_tbls = tbls;
+
 	return (oris_expr_mem_pool != NULL);
 }
 
@@ -56,16 +60,18 @@ void oris_interpreter_finalize(void)
 {
 	if (strFactory) {
 		strFactory->close(strFactory);
+		strFactory = NULL;
 	}
 
 	if (oris_expr_mem_pool) {
 		destroy_mem_pool(oris_expr_mem_pool);
+		oris_expr_mem_pool = NULL;
 	}
 }
 
-oris_grammar_expr_value_t* oris_alloc_int_value(int value)
+oris_parse_expr_t* oris_alloc_int_value(int value)
 {
-	oris_grammar_expr_value_t* retval = mem_pool_alloc(oris_expr_mem_pool);
+	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_INT;
 		retval->value.as_int = value;
@@ -74,9 +80,9 @@ oris_grammar_expr_value_t* oris_alloc_int_value(int value)
 	return retval;
 }
 
-oris_grammar_expr_value_t* oris_alloc_int_value_from_str(const pANTLR3_STRING s)
+oris_parse_expr_t* oris_alloc_int_value_from_str(const pANTLR3_STRING s)
 {
-	oris_grammar_expr_value_t* retval = oris_alloc_int_value(0);
+	oris_parse_expr_t* retval = oris_alloc_int_value(0);
 
 	if (!oris_strtoint((char*) s->chars, &retval->value.as_int)) {
 		oris_free_expr_value(retval);
@@ -86,9 +92,9 @@ oris_grammar_expr_value_t* oris_alloc_int_value_from_str(const pANTLR3_STRING s)
 	return retval;
 }
 
-oris_grammar_expr_value_t* oris_alloc_string_value(const pANTLR3_STRING s)
+oris_parse_expr_t* oris_alloc_string_value(const pANTLR3_STRING s)
 {
-	oris_grammar_expr_value_t* retval = mem_pool_alloc(oris_expr_mem_pool);
+	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_STRING;
 		retval->value.as_string = strFactory->newStr(strFactory, s->chars);
@@ -97,30 +103,34 @@ oris_grammar_expr_value_t* oris_alloc_string_value(const pANTLR3_STRING s)
 	return retval;
 }
 
-oris_grammar_expr_value_t* oris_alloc_value_from_rec_i(const pANTLR3_STRING tbl, int col)
+oris_parse_expr_t* oris_alloc_value_from_rec_i(const pANTLR3_STRING tbl, int col)
 {
-	oris_grammar_expr_value_t* retval = mem_pool_alloc(oris_expr_mem_pool);
+	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_STRING;
-		retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) "{record}");
+		retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) 
+				oris_tables_get_field_by_number(data_tbls, (const char*) (tbl->chars), col));
+
 	}
 	
 	return retval;
 }
 
-oris_grammar_expr_value_t* oris_alloc_value_from_rec_s(const pANTLR3_STRING tbl, const pANTLR3_STRING col)
+oris_parse_expr_t* oris_alloc_value_from_rec_s(const pANTLR3_STRING tbl, const pANTLR3_STRING col)
 {
-	oris_grammar_expr_value_t* retval = mem_pool_alloc(oris_expr_mem_pool);
+	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_STRING;
-		retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) "{record}");
+		retval->value.as_string = strFactory->newStr(strFactory,(pANTLR3_UINT8) 
+				oris_tables_get_field(data_tbls, (const char*) (tbl->chars), 
+				(const char*) col->chars));
 	}
 	
 	return retval;
 }
 
 
-void oris_free_expr_value(oris_grammar_expr_value_t* v)
+void oris_free_expr_value(oris_parse_expr_t* v)
 {
 	if (v != NULL) {
 		if (v->type == ET_STRING && v->value.as_string != NULL) {
@@ -138,7 +148,7 @@ void oris_free_expr_value_void(void* v)
 	oris_free_expr_value(v);
 }
 
-static void oris_expr_cast_to_str(oris_grammar_expr_value_t *r)
+static void oris_expr_cast_to_str(oris_parse_expr_t *r)
 {
 	int iv;
 
@@ -150,8 +160,8 @@ static void oris_expr_cast_to_str(oris_grammar_expr_value_t *r)
 	}
 }
 
-static void oris_grammar_eval_plus(oris_grammar_expr_value_t* a,
-	oris_grammar_expr_value_t* b, oris_grammar_expr_value_t* r)
+static void oris_grammar_eval_plus(oris_parse_expr_t* a,
+	oris_parse_expr_t* b, oris_parse_expr_t* r)
 {
 	int ia, ib;
 
@@ -200,8 +210,8 @@ static void oris_grammar_eval_arith_op2(int a, int b, int op, int* r)
 	}
 }
 
-static void oris_expr_eval_log_op2(oris_grammar_expr_value_t* a, 
-	oris_grammar_expr_value_t* b, int op, oris_grammar_expr_value_t* r)
+static void oris_expr_eval_log_op2(oris_parse_expr_t* a, 
+	oris_parse_expr_t* b, int op, oris_parse_expr_t* r)
 {
 	int ia, ib;
 	int* ir;
@@ -239,7 +249,7 @@ static void oris_expr_eval_log_op2(oris_grammar_expr_value_t* a,
 	}
 }
 
-oris_grammar_expr_value_t* oris_expr_eval_unary_op(oris_grammar_expr_value_t* a, int op)
+oris_parse_expr_t* oris_expr_eval_unary_op(oris_parse_expr_t* a, int op)
 {
 	if (a->type == ET_INT && op == MINUS) {
 		a->value.as_int = -a->value.as_int;
@@ -248,10 +258,10 @@ oris_grammar_expr_value_t* oris_expr_eval_unary_op(oris_grammar_expr_value_t* a,
 	return a;
 }
 
-oris_grammar_expr_value_t* oris_expr_eval_binary_op(oris_grammar_expr_value_t* a, 
-	oris_grammar_expr_value_t* b, int op)
+oris_parse_expr_t* oris_expr_eval_binary_op(oris_parse_expr_t* a, 
+	oris_parse_expr_t* b, int op)
 {
-	oris_grammar_expr_value_t* retval = mem_pool_alloc(oris_expr_mem_pool);
+	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	int ia, ib;
 
 	if (op == PLUS) {
@@ -286,11 +296,11 @@ static oris_builtin_func_t* get_builtin_fn_by_name(const char* name)
 	return NULL;
 }
 
-oris_grammar_expr_value_t* oris_expr_eval_function(const pANTLR3_STRING fname,
+oris_parse_expr_t* oris_expr_eval_function(const pANTLR3_STRING fname,
 	pANTLR3_LIST args)
 {
 	oris_builtin_func_t* fn;
-	oris_grammar_expr_value_t* retval = NULL;
+	oris_parse_expr_t* retval = NULL;
 
 	fn = get_builtin_fn_by_name((char*) fname->chars);
 	if (fn) {
@@ -307,7 +317,7 @@ oris_grammar_expr_value_t* oris_expr_eval_function(const pANTLR3_STRING fname,
 	return retval;
 }
 
-char* oris_expr_as_string(const oris_grammar_expr_value_t* expr)
+char* oris_expr_as_string(const oris_parse_expr_t* expr)
 {
 	char* retval = NULL;
 
@@ -322,7 +332,7 @@ char* oris_expr_as_string(const oris_grammar_expr_value_t* expr)
 	return retval;
 }
 
-bool oris_expr_as_int(const oris_grammar_expr_value_t* expr, int* v)
+bool oris_expr_as_int(const oris_parse_expr_t* expr, int* v)
 {
 	int retval = expr != NULL;
 	int tmp;
@@ -342,7 +352,7 @@ bool oris_expr_as_int(const oris_grammar_expr_value_t* expr, int* v)
 	return retval;
 }
 
-bool oris_expr_as_bool(const oris_grammar_expr_value_t* expr, bool* v)
+bool oris_expr_as_bool(const oris_parse_expr_t* expr, bool* v)
 {
 	int iv;
 
@@ -354,7 +364,7 @@ bool oris_expr_as_bool(const oris_grammar_expr_value_t* expr, bool* v)
 	return false;
 }
 
-void oris_expr_dump(const oris_grammar_expr_value_t* v)
+void oris_expr_dump(const oris_parse_expr_t* v)
 {
 	if (v->type == ET_NONE) {
 		printf("undefined\n");
@@ -367,17 +377,17 @@ void oris_expr_dump(const oris_grammar_expr_value_t* v)
 
 /* builtin function implementation */
 
-static oris_grammar_expr_value_t* oris_built_in_length(pANTLR3_LIST args)
+static oris_parse_expr_t* oris_built_in_length(pANTLR3_LIST args)
 {
-	oris_grammar_expr_value_t* arg = args->get(args, 1);
+	oris_parse_expr_t* arg = args->get(args, 1);
 	oris_expr_cast_to_str(arg);
 
 	return oris_alloc_int_value(mbstowcs(NULL, (char*) arg->value.as_string->chars, 0));
 }
 
-static oris_grammar_expr_value_t* oris_built_in_quote(pANTLR3_LIST args)
+static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args)
 {
-	oris_grammar_expr_value_t* arg = args->get(args, 1);
+	oris_parse_expr_t* arg = args->get(args, 1);
 	oris_expr_cast_to_str(arg);
 
 	arg->value.as_string->insert(arg->value.as_string, 0, "\"");

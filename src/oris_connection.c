@@ -37,6 +37,7 @@ oris_connection_t* oris_connection_create(const char* name, oris_protocol_t* pro
 
 bool oris_connection_init(oris_connection_t* connection, const char* name, oris_protocol_t* protocol) 
 { 
+	connection->write = NULL;
 	connection->protocol = protocol;
 	connection->name = strdup(name);
 
@@ -51,6 +52,15 @@ bool oris_connection_init(oris_connection_t* connection, const char* name, oris_
 	return true;
 }
 
+void oris_connection_send(oris_connection_t* connection, const void* buf, size_t bufsize)
+{
+	if (connection->protocol) {
+		if (connection->protocol->write) {
+			connection->protocol->write(buf, bufsize, connection, connection->write);
+		}
+	}
+}
+
 void oris_connection_finalize(oris_connection_t* connection)
 {
 	if (connection->name) {
@@ -63,6 +73,7 @@ void oris_connection_finalize(oris_connection_t* connection)
 
 	connection->protocol = NULL;
 	connection->name = NULL;
+	connection->write = NULL;
 }
 
 void oris_connection_free(oris_connection_t* connection)
@@ -71,10 +82,10 @@ void oris_connection_free(oris_connection_t* connection)
 	free(connection);
 }
 
+/*
 int oris_connections_parse_config(yaml_event_t event, void* data, int level, bool is_key)
 {
 	oris_connection_list_t *connections = ((oris_application_info_t*) data)->connections;
-/*	oris_libevent_base_info_t *libevent_info = &((oris_application_info_t*) data)->libevent_info;*/
 	oris_connection_t* connection;
 
 	static bool in_connections = false;
@@ -112,7 +123,7 @@ int oris_connections_parse_config(yaml_event_t event, void* data, int level, boo
 
 	return 0;
 }
-
+*/
 
 void oris_connections_add(oris_connection_list_t* list, oris_connection_t* connection)
 {
@@ -128,10 +139,21 @@ void oris_connections_add(oris_connection_list_t* list, oris_connection_t* conne
 	}
 }
 
+void oris_connections_send(oris_connection_list_t* list, const char* proto_name, 
+    const void* buf, size_t buf_size)
+{
+	size_t i;
+
+	for (i = 0; i < list->count; i++) {
+		if (list->items[i] && strcmp(list->items[i]->protocol->name, proto_name) == 0) {
+			oris_connection_send(list->items[i], buf, buf_size);
+		}
+	}
+}
 
 void oris_connections_clear(oris_connection_list_t* list)
 {
-	int i; 
+	size_t i; 
 
 	for (i = 0; i < list->count; i++) {
 		if (list->items[i]) {
@@ -146,25 +168,19 @@ void oris_connections_clear(oris_connection_list_t* list)
 }
 
 
-void oris_targets_clear(oris_http_target_t* targets, int *count)
+void oris_free_connections(oris_connection_list_t *list)
 {
-	int i;
+	oris_connections_clear(list);
 
-	for (i = 0; i < *count; i++) {
-		if (targets[i].uri) {
-			evhttp_uri_free(targets[i].uri);
-			targets[i].uri = NULL;
-		}
-
-		if (targets[i].name) {
-			free(targets[i].name);
-			targets[i].name = NULL;
-		}
-	}
-
-	*count = 0;
+	free(list->items);
+	list->items = NULL;
+	list->count = 0;
 }
 
+
+
+
+/*
 int oris_targets_parse_config(yaml_event_t event, void* data, int level, 
 	bool is_key)
 {
@@ -206,3 +222,4 @@ int oris_targets_parse_config(yaml_event_t event, void* data, int level,
 
 	return 0;
 }
+*/

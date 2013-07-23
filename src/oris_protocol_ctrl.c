@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
@@ -32,7 +33,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 		free(line);
 	}
 
-	if (evbuffer_get_length(input) > sysconf(_SC_PAGESIZE)) {
+	if (evbuffer_get_length(input) > 1024) {
 		evbuffer_add_printf(output, "Sorry, line too long\r\n");
 		evbuffer_drain(input, evbuffer_get_length(input));
 	}
@@ -58,4 +59,6 @@ static void process_command(const char* cmd, oris_application_info_t* info,
 	} else {
 		oris_log_f(LOG_INFO, "unknown remote command '%s'", cmd);
 	}
+
+	output = output;
 }
