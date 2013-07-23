@@ -21,10 +21,12 @@ tokens {
 	TABLE='table';
 	COMMAND='command';
 	CONNECTION='connection';
+	CONNECTIONS='connections';
 	ESTABLISHED='established';
 	CLOSED='closed';
 	TEMPLATE='template';
 	REQUEST='request';
+	TARGETS='targets';
 	HTTP='http';
 	
 	COLON=':';
@@ -38,7 +40,15 @@ tokens {
 }
 
 configuration
-	: (statement)*
+	: (connections)? (targets)? (statement)*
+	;
+
+targets
+	: ^TARGETS COLON! (kv_list)?
+	;
+
+connections
+	: ^CONNECTIONS COLON! (kv_list)?
 	;
 
 statement
@@ -80,10 +90,10 @@ action
 	;
 
 template_definition:
-/*	: TEMPLATE^ IDENTIFIER COLON! kv_list SEMICOLON!*/
+	: TEMPLATE^ IDENTIFIER COLON! kv_list SEMICOLON!
 	;
 
-/*kv_list
+kv_list
 	: kv_pair (COMMA! kv_pair)*
 	|
 	;
@@ -91,7 +101,7 @@ template_definition:
 kv_pair
 	: ^IDENTIFIER COLON! expr
 	;
-*/
+
 request_definition
 	: REQUEST^ IDENTIFIER COLON! expr SEMICOLON!
 	;

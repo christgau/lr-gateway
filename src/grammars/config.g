@@ -1,5 +1,5 @@
-/* vim: set filetype=antlrv3 */
-grammar configuration;
+/* vim: set filetype=antlr3 */
+grammar config;
 
 
 options {
@@ -11,11 +11,17 @@ options {
 
 tokens {
 	CONFIG;
+	AUTOMATION;
 	RECORD;
+	EVENT;
+	OBJECT;
+	ACTIONLIST;
 	FUNCTION;
 	PARAMS;
 	ITERATE;
 	VALUE;
+	TEMPLATES;
+
 
 	AND='and';
 	OR='or';
@@ -44,49 +50,38 @@ tokens {
 }
 
 configuration
-//	: connections targets (statement)* (template_definition)* (request_definition)? -> ^(CONFIG connections targets statement* template_definition* request_definition?)
-	: connections targets (event)* (template_definition)* (requests_definition)?-> ^(CONFIG connections targets event* template_definition* requests_definition?) 
+	: connections targets (event)* (template_definition)* (requests_definition)? -> ^(CONFIG connections targets) ^(AUTOMATION event*) ^(TEMPLATES template_definition*) requests_definition?
 	;
 
 connections
-	: CONNECTIONS^ COLON! kv_list
+	: CONNECTIONS^ COLON! kv_list SEMICOLON!
 	;
 
 targets
-	: TARGETS^ COLON! kv_list
+	: TARGETS^ COLON! kv_list SEMICOLON!
 	;
 
 event
-	: ON object COLON (action)* -> ^(object action*)
+	: ON object COLON (action)* -> ^(EVENT object ACTIONLIST action*)
 	;
 
 object
-	: connection
-	| table_ref
-	| command
+	: CONNECTION connection_state -> ^(CONNECTION connection_state)
+	| TABLE^ IDENTIFIER
+	| COMMAND^ STRING
 	;
 
-connection
-	: CONNECTION connection_state -> ^(CONNECTION connection_state)
-	;
-	
 connection_state
 	: ESTABLISHED
 	| CLOSED
 	;
 
-table_ref
-	: TABLE^ IDENTIFIER
-	;
-
-command
-	: COMMAND^ STRING
-	;
-
 action
-	: HTTP http_method url=expr 'with' kind=('value' expr | 'template' IDENTIFIER) SEMICOLON -> ^(HTTP http_method $url $kind)
+//	: HTTP http_method url=expr ('with' 'value') value=expr SEMICOLON -> ^(HTTP http_method $url $value)
+//	: HTTP http_method url=expr ('with' 'template') tmp_name=IDENTIFIER SEMICOLON -> ^(HTTP http_method $url $tmp_name)
+	: HTTP^ http_method url=expr 'with'! ('template'! IDENTIFIER | 'value'! expr) SEMICOLON! 
 	| REQUEST IDENTIFIER ('for' 'each' 'entry') SEMICOLON -> ^(ITERATE IDENTIFIER)
-	| REQUEST IDENTIFIER SEMICOLON -> ^(REQUEST IDENTIFIER)
+	| REQUEST^ IDENTIFIER SEMICOLON!
 	;
 
 http_method
@@ -97,23 +92,19 @@ http_method
 	;
 	
 template_definition
-	: TEMPLATE^ IDENTIFIER COLON! kv_list? SEMICOLON!
+	: TEMPLATE^ IDENTIFIER COLON! kv_list
+	;
+
+requests_definition
+	: REQUESTS^ COLON! kv_list
 	;
 
 kv_list
-	: kv_pair (COMMA! kv_pair)*
+	: (kv_pair)*
 	;
 	
 kv_pair
 	: IDENTIFIER COLON! expr
-	;
-
-requests_definition
-	: REQUESTS^ COLON! request_definition*
-	;
-
-request_definition
-	: REQUEST^ IDENTIFIER COLON! expr SEMICOLON!
 	;
 
 expr
