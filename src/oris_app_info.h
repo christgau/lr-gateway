@@ -1,23 +1,11 @@
 #ifndef __ORIS_APP_INFO_H
 #define __ORIS_APP_INFO_H
 
+#include "oris_http.h"
 #include "oris_table.h"
+#include "oris_libevent.h"
 #include "oris_connection.h"
 #include "oris_interpret_tools.h"
-
-/* libevent related global application stuff */
-typedef struct oris_libevent_base_info {
-	struct event_base *base;
-	struct evdns_base *dns_base;
-} oris_libevent_base_info_t;
-
-
-/* key-value pair holding information about an remote http target */
-typedef struct oris_http_target {
-	char* name;
-	struct evhttp_uri* uri;
-} oris_http_target_t;
-
 
 /* main application state and configuration is held herein */
 typedef struct oris_application_info {

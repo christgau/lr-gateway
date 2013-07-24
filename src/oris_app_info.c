@@ -37,6 +37,9 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			config->targets.items = items;
 			config->targets.items[config->targets.count].name = strdup(name);
 			config->targets.items[config->targets.count].uri = evuri;
+            config->targets.itesm[config->targets.count].connection = 
+                evhttp_connection_base_new:w
+
 			config->targets.count++;
 		}
 		oris_log_f(LOG_DEBUG, "new target %s: %s", name, uri);

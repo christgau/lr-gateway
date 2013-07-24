@@ -2,6 +2,8 @@
 #define __ORIS_AUTOMATION_H
 
 #include <stdbool.h>
+#include <event2/http.h>
+#include <antlr3commontree.h>
 
 #include "oris_app_info.h"
 #include "oris_automation_types.h"
@@ -21,5 +23,9 @@ void oris_automation_iterate_action(oris_application_info_t* info,
 
 void oris_automation_request_action(oris_application_info_t* info, 
 	const char* request_name);
+
+void oris_automation_http_action(oris_application_info_t* info, 
+    enum evhttp_cmd_type method, oris_parse_expr_t* url, 
+    pANTLR3_BASE_TREE $tmpl_name, oris_parse_expr_t* value);
 
 #endif /* __ORIS_AUTOMATION_H */

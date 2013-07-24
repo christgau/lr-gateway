@@ -34,18 +34,17 @@ SOURCES=\
 OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
 HEADERS=$(patsubst %.c,%.h,$(SOURCES))
 
-
+GRAMMARS_DIR=./grammars
 GRAMMAR_SRC=\
-	grammars/configLexer.c \
-	grammars/configParser.c \
-	grammars/configTree.c
+	$(GRAMMARS_DIR)/configLexer.c \
+	$(GRAMMARS_DIR)/configParser.c \
+	$(GRAMMARS_DIR)/configTree.c
 
-GRAMMAR_ARCHIVE=grammars/config.ar
+GRAMMAR_ARCHIVE=$(GRAMMARS_DIR)/config.ar
 
 .PHONY: clean grammar
 
-all: $(TARGET) 
-#grammar
+all: $(GRAMMAR_ARCHIVE) $(TARGET) 
 
 %.o: %.c %.h
 	@echo "CC    $<"
@@ -54,14 +53,10 @@ all: $(TARGET)
 $(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS) $(GRAMMAR_ARCHIVE)
 	$(CC) $(WARNFLAGS) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
 
-$(GRAMMAR_ARCHIVE): $(GRAMMAR_SRC)
+$(GRAMMAR_ARCHIVE): $(GRAMMARS_DIR)/*.g $(GRAMMAR_SRC)
+	$(MAKE) -C $(GRAMMARS_DIR) grammars
 	for FILE in $(GRAMMAR_SRC); do $(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
 	$(AR) cr $@ $(patsubst %.c,%.o,$^)
-
-#grammar: grammars/oris_automation.g
-#	CLASSPATH=$(ANTLR_CP) $(ANTLR) $< 
-
-
 
 clean:
 	$(RM) $(TARGET)

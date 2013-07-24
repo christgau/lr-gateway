@@ -8,6 +8,7 @@ options {
 
 @header {
 #include <stdbool.h>
+#include <event2/http.h>
 
 #include "oris_app_info.h"
 #include "oris_automation_types.h"
@@ -42,7 +43,6 @@ connections[oris_application_info_t* info]
 	: ^(CONNECTIONS (key=IDENTIFIER value=expr { oris_create_connection(info, $key.text->chars, value); } )* )
 	;
 
-
 targets[oris_application_info_t* info]
 	: ^(TARGETS (key=IDENTIFIER value=expr { 
 			char* v_str = oris_expr_as_string($value.value);
@@ -72,14 +72,14 @@ action[oris_application_info_t* info]
 	@after { in_action = false;	}
 	: ^(ITERATE tbl_name=IDENTIFIER) { oris_automation_iterate_action(info, $tbl_name.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, $name.text->chars); }
-	| ^(HTTP method=http_method url=expr ( tmpl_name=IDENTIFIER | value=expr )) { /* oris_automation_http_action(); */ }
+	| ^(HTTP method=http_method url=expr ( tmpl_name=IDENTIFIER | value=expr )) { oris_automation_http_action(info, method, url, $tmpl_name, value); }
 	;
 
-http_method
-	: 'get'
-	| 'put'
-	| 'post'
-	| 'delete'
+http_method returns [enum evhttp_cmd_type http_method]
+	: 'get' { $http_method = EVHTTP_REQ_GET;  }
+	| 'put' { $http_method =  EVHTTP_REQ_PUT; }
+	| 'post' { $http_method = EVHTTP_REQ_POST; }
+	| 'delete' { $http_method = EVHTTP_REQ_DELETE; }
 	;
 
 kv_list returns [pANTLR3_LIST list]

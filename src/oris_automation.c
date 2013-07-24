@@ -53,8 +53,24 @@ void oris_automation_request_action(oris_application_info_t* info,
 {
 	char* r = oris_get_parsed_request(request_name);
 
-	oris_log_f(LOG_DEBUG, "sending requesting \%s\n", r);
-	oris_connections_send(&info->connections, "data", r, strlen(r));
-		
-	free(r);
+	if (r != NULL) {
+		oris_log_f(LOG_DEBUG, "sending requesting \%s\n", r);
+		oris_connections_send(&info->connections, "data", r, strlen(r));
+		free(r);
+	}
+}
+
+void oris_automation_http_action(oris_application_info_t* info, 
+    enum evhttp_cmd_type method, oris_parse_expr_t* url, 
+    pANTLR3_BASE_TREE tmpl_name, oris_parse_expr_t* value)
+{
+    size_t i;
+
+    for (i = 0; i < info->connections.count; i++) {
+        if (tmpl_name != NULL) {
+            /* TODO: parse template */
+        } else if (value != NULL) {
+            /* TODO: send value  */
+        }
+    }
 }

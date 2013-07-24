@@ -1,3 +1,6 @@
+# configuration for oris gateway: connections, targets and requests
+# vim: set filetype=conf shiftwidth=4 tabexpand
+
 connections:
     datafeed: "data://192.168.2.72:4433"
     control: "ctrl://*:4422"
@@ -12,17 +15,16 @@ targets:
 
 on connection established:
 	request current_event;
-#	request something_else;
-#
+
 #on connection closed:
 #	request shutdown_event;
-#
-#on table ver:
-#	http put "/currentevent" with value {VER.1};
+
+
+on table ver!:
+	request quark;
+	http put "/currentevent" with value {VER.1};
 #	http put "/events/{VER.1}/comps/" with template competition;
-#
-#
-#
+
 #on table vrd:
 #	http put "/events/{VER.1}/comps/" with template competition;
 #	request startlist_from_vrd for each entry;
@@ -40,7 +42,6 @@ on connection established:
 template competition:
 	id: {VRD.1}
 	label: "STRING" + 123 + {VRD.2} + TOKEN({VRD.2}, 1, "#")
-
 
 requests:
 	current_event: "?VER"
