@@ -7,13 +7,10 @@ INCLUDEPATHS=-I$(HOME)/include -I. -I./deps/mempool -I./grammars
 WARNFLAGS=-Wall -Wextra
 CFLAGS=-g -O0 $(INCLUDEPATHS)
 
-ANTLR_LIB=$(HOME)/opt/antlr-3.4/lib
 LDFLAGS=-g -levent -L$(HOME)/lib -L$(ANTLR) -lantlr3c
 
 TARGET=gateway
 MAINFILE=oris_gateway.c
-
-ANTLR_CP=/usr/share/antlr-3/lib/antlr3.jar
 
 SOURCES=\
 	oris_app_info.c \
@@ -53,10 +50,14 @@ all: $(GRAMMAR_ARCHIVE) $(TARGET)
 $(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS) $(GRAMMAR_ARCHIVE)
 	$(CC) $(WARNFLAGS) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
 
-$(GRAMMAR_ARCHIVE): $(GRAMMARS_DIR)/*.g $(GRAMMAR_SRC)
+grammar: $(GRAMMARS_DIR)/*.g 
 	$(MAKE) -C $(GRAMMARS_DIR) grammars
+
+$(GRAMMAR_ARCHIVE): grammar $(GRAMMAR_SRC)
 	for FILE in $(GRAMMAR_SRC); do $(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
 	$(AR) cr $@ $(patsubst %.c,%.o,$^)
+
+
 
 clean:
 	$(RM) $(TARGET)
