@@ -39,7 +39,7 @@ GRAMMAR_SRC=\
 
 GRAMMAR_ARCHIVE=$(GRAMMARS_DIR)/config.ar
 
-.PHONY: clean grammar
+.PHONY: clean
 
 all: $(GRAMMAR_ARCHIVE) $(TARGET) 
 
@@ -50,14 +50,14 @@ all: $(GRAMMAR_ARCHIVE) $(TARGET)
 $(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS) $(GRAMMAR_ARCHIVE)
 	$(CC) $(WARNFLAGS) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
 
-grammar: $(GRAMMARS_DIR)/*.g 
+grammars: $(GRAMMARS_DIR)/*.g 
 	$(MAKE) -C $(GRAMMARS_DIR) grammars
 
-$(GRAMMAR_ARCHIVE): grammar $(GRAMMAR_SRC)
-	for FILE in $(GRAMMAR_SRC); do $(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
-	$(AR) cr $@ $(patsubst %.c,%.o,$^)
-
-
+$(GRAMMAR_ARCHIVE): $(GRAMMAR_SRC)
+	$(MAKE) $(patsubst %.c,%.o,$(GRAMMAR_SRC))
+#	for FILE in $(GRAMMAR_SRC); do $(MAKE) `echo $$FILE | sed s/\.c$$/.o/`; done
+	#$(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
+	$(AR) cr $@ $(patsubst %.c,%.o,$(GRAMMAR_SRC))
 
 clean:
 	$(RM) $(TARGET)

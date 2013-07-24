@@ -37,8 +37,13 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			config->targets.items = items;
 			config->targets.items[config->targets.count].name = strdup(name);
 			config->targets.items[config->targets.count].uri = evuri;
-            config->targets.itesm[config->targets.count].connection = 
-                evhttp_connection_base_new:w
+			config->targets.items[config->targets.count].bev = 
+				bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
+
+            config->targets.items[config->targets.count].connection = 
+                evhttp_connection_base_new(config->libevent_info.base, config->libevent_info.dns_base,
+					config->targets.items[config->targets.count].bev, evhttp_uri_get_host(evuri),
+					evhttp_uri_get_porr(evuri));
 
 			config->targets.count++;
 		}

@@ -1,4 +1,4 @@
-ANTLR_LIB=$(HOME)/opt/antlr-3.4/lib
+ANTLR_LIB=$(HOME)/src/antlr-3.4/lib
 ANTLR=CLASSPATH=$(ANTLR_LIB)/antlr-3.4-complete.jar java org.antlr.Tool
 GRAMMAR=config
 TREE_GRAMMAR=configTree
