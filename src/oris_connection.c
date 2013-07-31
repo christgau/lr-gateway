@@ -41,7 +41,7 @@ bool oris_connection_init(oris_connection_t* connection, const char* name, oris_
 	connection->protocol = protocol;
 	connection->name = strdup(name);
 
-	if (!connection->name) {
+	if (connection->name == NULL) {
 		perror("strdup");
 		oris_log_f(LOG_DEBUG, "could not duplicate connection name %s", name);
 		return false;
@@ -63,15 +63,16 @@ void oris_connection_send(oris_connection_t* connection, const void* buf, size_t
 
 void oris_connection_finalize(oris_connection_t* connection)
 {
-	if (connection->name) {
+	if (connection->name != NULL) {
 		free(connection->name);
 	}
 
-	if (connection->protocol) {
-		oris_protocol_free(connection->protocol);
+	if (connection->protocol != NULL && connection->protocol->destroy != NULL) {
+		connection->protocol->destroy(connection->protocol);
+	} else {
+		oris_free_and_null(connection->protocol);
 	}
 
-	connection->protocol = NULL;
 	connection->name = NULL;
 	connection->write = NULL;
 }
@@ -161,10 +162,8 @@ void oris_connections_clear(oris_connection_list_t* list)
 		}
 	}
 
-	free(list->items);
-
 	list->count = 0;
-	list->items = NULL;
+	oris_free_and_null(list->items);
 }
 
 

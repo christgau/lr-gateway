@@ -10,6 +10,11 @@
 #include "oris_table.h"
 
 #define ORIS_VERSION "0.0.2"
+#ifdef _WINDOWS
+#define ORIS_USER_AGENT ("orisgateway/"  ORIS_VERSION, " (win32)")
+#else
+#define ORIS_USER_AGENT ("orisgateway/"  ORIS_VERSION " (linux)")
+#endif
 
 typedef uint32_t oris_error_t;
 extern const oris_error_t ORIS_SUCCESS;

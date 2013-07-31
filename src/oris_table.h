@@ -9,7 +9,7 @@
 /* a row within a table */
 typedef struct oris_table_row {
 	char* buffer;
-	size_t field_count;
+	int field_count;
 } oris_table_row_t;
 
 
@@ -19,9 +19,9 @@ typedef enum { RECEIVING, COMPLETE } oris_table_recv_state;
 typedef struct oris_table {
 	char* name;
 	char* field_names;
-	size_t field_count;
+	int field_count;
 	int current_row;
-	size_t row_count;
+	int row_count;
 	oris_table_recv_state state;
 	oris_table_row_t* rows;
 } oris_table_t;

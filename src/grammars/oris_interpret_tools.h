@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <antlr3string.h>
+#include <antlr3commontree.h>
 
 #include "oris_table.h"
 #include "mem_pool.h"
@@ -34,7 +35,7 @@ oris_parse_expr_t* oris_alloc_int_value(int value);
 oris_parse_expr_t* oris_alloc_int_value_from_str(const pANTLR3_STRING s);
 oris_parse_expr_t* oris_alloc_string_value(const pANTLR3_STRING s);
 
-oris_parse_expr_t* oris_alloc_value_from_rec_i(const pANTLR3_STRING tbl, int col);
+oris_parse_expr_t* oris_alloc_value_from_rec_i(const pANTLR3_STRING tbl, const int col);
 oris_parse_expr_t* oris_alloc_value_from_rec_s(const pANTLR3_STRING tbl, const pANTLR3_STRING col);
 
 void oris_free_expr_value(oris_parse_expr_t* v);
@@ -52,5 +53,7 @@ bool oris_expr_as_int(const oris_parse_expr_t* expr, int* v);
 bool oris_expr_as_bool(const oris_parse_expr_t* expr, bool* v);
 
 void oris_expr_dump(const oris_parse_expr_t* v);
+
+oris_parse_expr_t* oris_expr_parse_from_tree(const pANTLR3_BASE_TREE tree);
 
 #endif /* __ORIS_INTERPRET_TOOLS_H  */

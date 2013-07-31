@@ -4,91 +4,25 @@
 
 #ifndef _WINDOWS
 #include <getopt.h>
-#include <signal.h>
 #else 
 #include <unistd.h>
 #endif
 
-#include <event2/event.h>
-#include <event2/dns.h>
-
 #include "oris_log.h"
+#include "oris_util.h"
 #include "oris_app_info.h"
 #include "oris_configuration.h"
-#include "oris_protocol.h"
-#include "oris_socket_connection.h"
-#include "oris_interpret_tools.h"
-
-static void oris_libevent_log_cb(int severity, const char* msg)
-{
-	int sev;
-
-	puts(msg);
-	switch (severity) {
-		case _EVENT_LOG_DEBUG:
-			sev = LOG_DEBUG;
-			break;
-		case _EVENT_LOG_MSG:
-			sev = LOG_INFO;
-			break;
-		case _EVENT_LOG_WARN:
-			sev = LOG_WARNING;
-			break;
-		case _EVENT_LOG_ERR:
-			sev = LOG_ERR;
-			break;
-		default: 
-			sev = LOG_WARNING;
-	}
-
-	oris_logs(sev, msg);
-}
-
-static void oris_sigint_cb(evutil_socket_t fd, short type, void *arg)
-{
-	struct event_base *base = arg;
-
-	oris_logs(LOG_INFO, "Received SIGINT. Cleaning up and exiting.\n");
-	fflush(stdout);
-
-	event_base_loopbreak(base);
-
-	/* keep compiler happy */
-	fd = fd;
-	type = type;
-}
-
-static int oris_init_libevent(struct oris_application_info *info)
-{
-	info->libevent_info.base = event_base_new();
-	info->libevent_info.dns_base = evdns_base_new(info->libevent_info.base, true);
-
-	if (info->libevent_info.base == NULL || info->libevent_info.dns_base == NULL) {
-		return EXIT_FAILURE;
-	} else {
-		info->sigint_event = evsignal_new(info->libevent_info.base, SIGINT, oris_sigint_cb, 
-			info->libevent_info.base);
-		event_set_log_callback(oris_libevent_log_cb);
-		event_add(info->sigint_event, NULL);
-
-		return EXIT_SUCCESS;
-	}
-}
 
 int oris_main_default(oris_application_info_t *info)
 {
-	/* prepare libevent stuff */
-	if (oris_init_libevent(info)) {
-		oris_log_f(LOG_ERR, "could not init libevent. Exiting\n");
-		return EXIT_FAILURE;
-	}
-
 	info->paused = true;
+
+	if (!oris_app_info_init(info)) {
+		oris_log_f(LOG_CRIT, "could not init application (see above). Exiting");
+	}
 
 	oris_tables_init(&info->data_tables);
 	oris_interpreter_init(&info->data_tables);
-
-	oris_app_info_init(info);
 	oris_configuration_init();
 
 	if (!oris_load_configuration(info)) {
@@ -105,21 +39,17 @@ int oris_main_default(oris_application_info_t *info)
 	event_base_dispatch(info->libevent_info.base);
 
 	/* cleanup */
+	oris_configuration_finalize();
 	oris_interpreter_finalize();
 	oris_tables_finalize(&info->data_tables);
-
-	event_free(info->sigint_event);
-	evdns_base_free(info->libevent_info.dns_base, 0);
-	event_base_free(info->libevent_info.base);
-
-	oris_logs(LOG_INFO, "finished.");
+	oris_app_info_finalize(info);
 
 #if LIBEVENT_VERSION_NUMBER >= 0x02010100 
+	oris_log_f(LOG_INFO, "LibEvent global shutdown.");
 	libevent_global_shutdown();
 #endif
 
-	oris_configuration_finalize();
-	oris_app_info_finalize(info);
+	oris_log_f(LOG_INFO, "Done.");
 
 	return EXIT_SUCCESS;
 }

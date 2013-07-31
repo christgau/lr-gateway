@@ -1,6 +1,7 @@
 #ifndef __ORIS_HTTP_H
 #define __ORIS_HTTP_H
 
+#include <event2/bufferevent.h>
 #include <event2/http.h>
 
 #include "oris_libevent.h"
@@ -9,7 +10,8 @@
 typedef struct oris_http_target {
 	char* name;
 	struct evhttp_uri* uri;
-    struct ev_http_connection* connection;
+    struct evhttp_connection* connection;
+	struct bufferevent* bev;
 } oris_http_target_t;
 
 

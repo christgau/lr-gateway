@@ -53,7 +53,7 @@ bool oris_strtoint(const char* s, int* v)
 	if (((lv == LONG_MIN || lv == LONG_MAX) && (errno != 0)) || 
 		(lv == 0 && errno != 0) ||
 		(lv > INT_MAX || lv < INT_MIN) ||
-		(endptr == s)) {
+		(*endptr != '\0')) {
 		return false;
 	} else  {
 		*v = (int) lv;

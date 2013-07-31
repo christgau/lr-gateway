@@ -70,9 +70,9 @@ object returns [oris_automation_event_t event]
 action[oris_application_info_t* info]
 	@init {	in_action = true; }
 	@after { in_action = false;	}
-	: ^(ITERATE tbl_name=IDENTIFIER) { oris_automation_iterate_action(info, $tbl_name.text->chars); }
+	: ^(ITERATE req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_iterate_action(info, $req.text->chars, $tbl.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, $name.text->chars); }
-	| ^(HTTP method=http_method url=expr ( tmpl_name=IDENTIFIER | value=expr )) { oris_automation_http_action(info, method, url, $tmpl_name, value); }
+	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr ) ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? $tbl.text->chars : NULL, $it.value); }
 	;
 
 http_method returns [enum evhttp_cmd_type http_method]
@@ -80,6 +80,11 @@ http_method returns [enum evhttp_cmd_type http_method]
 	| 'put' { $http_method =  EVHTTP_REQ_PUT; }
 	| 'post' { $http_method = EVHTTP_REQ_POST; }
 	| 'delete' { $http_method = EVHTTP_REQ_DELETE; }
+	;
+
+table_iterate returns [bool value]
+	: 'table' { $value = false; }
+	| 'record' { $value = true; }
 	;
 
 kv_list returns [pANTLR3_LIST list]
@@ -90,6 +95,15 @@ kv_list returns [pANTLR3_LIST list]
 	: (key=IDENTIFIER value=expr  { 
 			$list->add($list, oris_create_kv_pair($key.text->chars, $value.value, oris_free_expr_value_void), oris_free_kv_pair_void); 
 		} )*
+	;
+
+exprTree
+	: ^((EQUAL | NOT_EQUAL | LTH | LE | GE | GT | PLUS | MINUS | OR | MUL | DIV | MOD | AND)  exprTree exprTree) 
+	| ^(RECORD IDENTIFIER INTEGER)
+	| ^(RECORD IDENTIFIER IDENTIFIER)
+	| ^(FUNCTION IDENTIFIER ^(PARAMS exprTree*))
+	| INTEGER
+	| STRING
 	;
 
 expr returns [oris_parse_expr_t* value]
@@ -135,7 +149,7 @@ parameters returns [pANTLR3_LIST argv]
 	;
 
 template_definition
-	: ^(TEMPLATE IDENTIFIER kv_list)
+	: ^(TEMPLATE IDENTIFIER IDENTIFIER kv_list)
 	;
 
 requests_definition

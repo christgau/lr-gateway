@@ -39,7 +39,7 @@ GRAMMAR_SRC=\
 
 GRAMMAR_ARCHIVE=$(GRAMMARS_DIR)/config.ar
 
-.PHONY: clean
+.PHONY: clean memcheck
 
 all: $(GRAMMAR_ARCHIVE) $(TARGET) 
 
@@ -54,10 +54,14 @@ grammars: $(GRAMMARS_DIR)/*.g
 	$(MAKE) -C $(GRAMMARS_DIR) grammars
 
 $(GRAMMAR_ARCHIVE): $(GRAMMAR_SRC)
-	$(MAKE) $(patsubst %.c,%.o,$(GRAMMAR_SRC))
-#	for FILE in $(GRAMMAR_SRC); do $(MAKE) `echo $$FILE | sed s/\.c$$/.o/`; done
-	#$(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
+	# $(MAKE) $(patsubst %.c,%.o,$(GRAMMAR_SRC))
+	#for FILE in $(GRAMMAR_SRC); do $(MAKE) `echo $$FILE | sed s/\.c$$/.o/`; done
+	for FILE in $(GRAMMAR_SRC); do $(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
 	$(AR) cr $@ $(patsubst %.c,%.o,$(GRAMMAR_SRC))
+
+memcheck: $(TARGET)
+	valgrind --tool=memcheck --leak-check=full --show-reachable=yes --log-file=$@ ./$(TARGET) --verbose; true
+	less -S $@
 
 clean:
 	$(RM) $(TARGET)

@@ -7,6 +7,7 @@
 #include "oris_util.h"
 #include "oris_table.h"
 #include "configParser.h"
+#include "configTree.h"
 
 #ifdef __GNUC__
 #include <locale.h>
@@ -27,10 +28,16 @@ typedef struct {
 
 static oris_parse_expr_t* oris_built_in_length(pANTLR3_LIST args);
 static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args);
+static oris_parse_expr_t* oris_built_in_token(pANTLR3_LIST args);
+static oris_parse_expr_t* oris_built_in_lpad(pANTLR3_LIST args);
+static oris_parse_expr_t* oris_built_in_rpad(pANTLR3_LIST args);
 
 static oris_builtin_func_t oris_builtin_funcs[] = {
 	{ "LENGTH", oris_built_in_length, 1, 0 },
-	{ "QUOTE", oris_built_in_quote, 1, 0 }
+	{ "TOKEN", oris_built_in_token, 3, 0 },
+	{ "QUOTE", oris_built_in_quote, 1, 0 },
+	{ "LPAD", oris_built_in_lpad, 3, 0 },
+	{ "RPAD", oris_built_in_rpad, 3, 0 }
 /*	{ "IFTHEN", NULL, 2, 1 },
 	{ "UPPERCASE", oris_built_in_uppercase, 1, 0},
 	{ "LOWERCASE", NULL, 1, 0},
@@ -97,20 +104,28 @@ oris_parse_expr_t* oris_alloc_string_value(const pANTLR3_STRING s)
 	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_STRING;
-		retval->value.as_string = strFactory->newStr(strFactory, s->chars);
+		if (s->chars != NULL) {
+			retval->value.as_string = strFactory->newStr(strFactory, s->chars);
+		} else {
+			retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) "");
+		}
 	}
 	
 	return retval;
 }
 
-oris_parse_expr_t* oris_alloc_value_from_rec_i(const pANTLR3_STRING tbl, int col)
+oris_parse_expr_t* oris_alloc_value_from_rec_i(const pANTLR3_STRING tbl, const int col)
 {
+	const char* str;
+
 	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
+		str = oris_tables_get_field_by_number(data_tbls, (const char*) (tbl->chars), col);
+		if (str == NULL) {
+			str = "";
+		}
 		retval->type = ET_STRING;
-		retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) 
-				oris_tables_get_field_by_number(data_tbls, (const char*) (tbl->chars), col));
-
+		retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) str);
 	}
 	
 	return retval;
@@ -287,7 +302,7 @@ static oris_builtin_func_t* get_builtin_fn_by_name(const char* name)
 {
 	size_t i;
 
-	for (i = 0; i < sizeof(oris_builtin_funcs); i++) {
+	for (i = 0; i < sizeof(oris_builtin_funcs) / sizeof(*oris_builtin_funcs); i++) {
 		if (stricmp(oris_builtin_funcs[i].name, name) == 0) {
 			return &oris_builtin_funcs[i];
 		}
@@ -320,12 +335,14 @@ oris_parse_expr_t* oris_expr_eval_function(const pANTLR3_STRING fname,
 char* oris_expr_as_string(const oris_parse_expr_t* expr)
 {
 	char* retval = NULL;
+	char itoabuf[16] = { 0 };
 
 	if (expr) {
 		if (expr->type == ET_STRING) {
 			retval = strdup((char*) expr->value.as_string->chars);
 		} else {
-			retval = strdup("a number"); /*itoa(expr->value.as_int);*/
+			snprintf(itoabuf, sizeof(itoabuf) - 1, "%d", expr->value.as_int);
+			retval = strdup(itoabuf);
 		}
 	}
 
@@ -396,4 +413,119 @@ static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args)
 	args->remove(args, 1);
 
 	return arg;
+}
+
+static oris_parse_expr_t* oris_built_in_token(pANTLR3_LIST args)
+{
+	oris_parse_expr_t* str_arg = args->get(args, 1);
+	oris_parse_expr_t* nr_arg = args->get(args, 2);
+	oris_parse_expr_t* delim_str = args->get(args, 3);
+	oris_parse_expr_t* retval = NULL;
+	int nr; 
+	ANTLR3_UINT32 start, end;
+	ANTLR3_UCHAR delim;
+	pANTLR3_STRING token, str;
+
+	oris_expr_cast_to_str(str_arg);
+	oris_expr_cast_to_str(delim_str);
+
+	str = str_arg->value.as_string;
+	delim = delim_str->value.as_string->charAt(delim_str->value.as_string, 0);
+
+	if (oris_expr_as_int(nr_arg, &nr)) {
+		if (nr <= 0) {
+			return oris_alloc_string_value(NULL);
+		}
+
+		/* search starting delim */
+		for (start = 0; start < str->len && nr > 1; start++) {
+			if (str->charAt(str, start) == delim) {
+				nr--;
+			}
+		}
+
+		/* search end of record */
+		for (end = start + 1; end < str->len && str->charAt(str, end) != delim; end++);
+
+		token = str->subString(str, start, end);
+		retval = oris_alloc_string_value(token);
+		/*token->factory->destroy(token->factory, token);*/
+	} else {
+		oris_log_f(LOG_CRIT, "invalid 2nd argument for TOKEN");
+	}
+
+	return retval;
+}
+
+static oris_parse_expr_t* oris_built_in_lpad(pANTLR3_LIST args)
+{
+	oris_parse_expr_t* str_arg = args->get(args, 1);
+	oris_parse_expr_t* minlen_arg = args->get(args, 2);
+	oris_parse_expr_t* fill_arg = args->get(args, 3);
+	pANTLR3_STRING fill;
+	int minlen;
+
+	oris_expr_cast_to_str(str_arg);
+	oris_expr_cast_to_str(fill_arg);
+
+	fill = fill_arg->value.as_string;
+
+	if (oris_expr_as_int(minlen_arg, &minlen)) {
+		while ((int) str_arg->value.as_string->len < minlen) {
+			
+			str_arg->value.as_string->insertS(str_arg->value.as_string, 0, fill);
+		}
+	}	
+	
+	args->remove(args, 1);
+	return str_arg;
+}
+
+
+static oris_parse_expr_t* oris_built_in_rpad(pANTLR3_LIST args)
+{
+	oris_parse_expr_t* str_arg = args->get(args, 1);
+	oris_parse_expr_t* minlen_arg = args->get(args, 2);
+	oris_parse_expr_t* fill_arg = args->get(args, 3);
+	pANTLR3_STRING fill;
+	int minlen;
+
+	oris_expr_cast_to_str(str_arg);
+	oris_expr_cast_to_str(fill_arg);
+
+	fill = fill_arg->value.as_string;
+
+	if (oris_expr_as_int(minlen_arg, &minlen)) {
+		while ((int) str_arg->value.as_string->len < minlen) {
+			str_arg->value.as_string->appendS(str_arg->value.as_string, fill);
+		}
+	}	
+	
+	args->remove(args, 1);
+	return str_arg;
+}
+
+
+oris_parse_expr_t* oris_expr_parse_from_tree(const pANTLR3_BASE_TREE tree)
+{
+	pANTLR3_COMMON_TREE_NODE_STREAM node_stream;
+	pconfigTree walker;
+    oris_parse_expr_t* expr;
+
+    node_stream = antlr3CommonTreeNodeStreamNewTree(tree, ANTLR3_SIZE_HINT);
+	if (node_stream == NULL) {
+		return NULL;
+	}
+
+    walker = configTreeNew(node_stream);
+	if (walker == NULL) {
+		return NULL;
+	}
+
+    expr = walker->expr(walker);
+
+    node_stream->free(node_stream);
+    walker->free(walker);
+
+	return expr;
 }

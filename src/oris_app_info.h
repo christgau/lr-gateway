@@ -29,7 +29,7 @@ typedef struct oris_application_info {
 } oris_application_info_t;
 
 /* init clean up stuff */
-void oris_app_info_init(oris_application_info_t* info);
+bool oris_app_info_init(oris_application_info_t* info);
 void oris_app_info_finalize(oris_application_info_t* info);
 
 /* adding and clearing targets from above */

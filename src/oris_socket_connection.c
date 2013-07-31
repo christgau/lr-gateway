@@ -156,13 +156,14 @@ bool oris_socket_connection_init(oris_socket_connection_t* connection, const cha
 	bufferevent_socket_connect_hostname(connection->bufev, info->dns_base, AF_UNSPEC, 
 		evhttp_uri_get_host(connection->uri), evhttp_uri_get_port(connection->uri));
 
+	oris_log_f(LOG_INFO, "init socket con %s", name);
+
 	return true;
 }
 
 void oris_socket_connection_finalize(oris_socket_connection_t* connection)
 {
 	oris_socket_connection_t* sc = (oris_socket_connection_t*) connection;
-	oris_connection_finalize((oris_connection_t*) connection);
 
 	if (sc->uri != NULL) {
 		evhttp_uri_free(sc->uri);
@@ -170,7 +171,8 @@ void oris_socket_connection_finalize(oris_socket_connection_t* connection)
 	}
 
 	if (sc->bufev != NULL) {
-		bufferevent_free(sc->bufev);
+		oris_log_f(LOG_INFO, "freeing da bufev");
+		bufferevent_free(sc->bufev); /* causes leaks/problems? */
 		sc->bufev = NULL;
 	}
 
@@ -201,7 +203,7 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 	}
 
 	if (!oris_connection_init((oris_connection_t*) retval, name, NULL)) {
-		oris_log_f(LOG_ERR, "coult not init the connection '%s'", name);
+		oris_log_f(LOG_ERR, "could not init the connection '%s'", name);
 	}
 
 	((oris_connection_t*) retval)->destroy = oris_server_connection_free;
@@ -298,8 +300,11 @@ void oris_server_connection_free(oris_connection_t* connection)
 		event_free(((oris_server_connection_t*) connection)->listen_event);
 	}
 
+	/* (this seems to be wrong and causes memory leaks)
 	oris_socket_connection_finalize(&((oris_server_connection_t*)  connection)->base);
 	free(connection);
+	*/
+	oris_socket_connection_free(connection);
 }
 
 oris_connection_t* oris_create_connection_from_uri(struct evhttp_uri* uri,

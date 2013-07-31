@@ -12,10 +12,11 @@ bool oris_table_add_row(oris_table_t* tbl, const char* s, char delim)
 	}
 
 	buf = strdup(s);
-	if (buf) {
+	if (buf == NULL) {
 		return false;
 	}
 
+	tbl->rows[tbl->row_count].field_count = 1;
 	tbl->rows[tbl->row_count].buffer = buf;
 
 	while (*buf) {
@@ -25,6 +26,11 @@ bool oris_table_add_row(oris_table_t* tbl, const char* s, char delim)
 		}
 		buf++;
 	}
+	
+	if (tbl->field_count < tbl->rows[tbl->row_count].field_count) {
+		tbl->field_count = tbl->rows[tbl->row_count].field_count;
+	}
+
 	tbl->row_count++;
 
 	return true;
@@ -44,12 +50,15 @@ void oris_table_init(oris_table_t* tbl)
 
 void oris_table_clear(oris_table_t* tbl)
 {
-	size_t i;
+	int i;
 
 	for (i = 0; i < tbl->row_count; i++) {
 		oris_free_and_null(tbl->rows[i].buffer);
 		tbl->rows[i].field_count = 0;
 	}
+
+	tbl->row_count = 0;
+	tbl->current_row = -1;
 }
 
 void oris_table_finalize(oris_table_t* tbl)
@@ -69,8 +78,7 @@ void oris_table_finalize(oris_table_t* tbl)
 
 static int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 {
-	int retval = 0;
-	size_t i;
+	int i, retval = 0;
 	char *name;
 
 	/* check if field is an integer */
@@ -106,13 +114,13 @@ static const char* oris_table_get_field_by_index(oris_table_t* tbl, const int in
 	}
 
 	row = &(tbl->rows[tbl->current_row]);
-	if (index < 0 || index > (int) tbl->field_count) {
+	if (index < 0 || index > (int) row->field_count) {
 		return NULL;
 	}
 
 	retval = row->buffer;
 	if (retval) {
-		for (i = 0; i < index; i++) {
+		for (i = 1; i < index; i++) {
 			retval = retval + strlen(retval) + 1;
 		}
 	}
@@ -157,6 +165,10 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 {
 	size_t i, inspos;
 
+	if (name == NULL) {
+		return NULL;
+	}
+
 	for (i = 0; i < tbl_list->count; i++) {
 		if (strcmp(tbl_list->tables[i].name, name) == 0) {
 			return &(tbl_list->tables[i]);
@@ -164,13 +176,13 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	}
 
 	/* nothing found, create new table */
-	if (create && oris_safe_realloc((void**) &(tbl_list->tables), tbl_list->count, sizeof(*(tbl_list->tables)))) {
+	if (create && oris_safe_realloc((void**) &(tbl_list->tables), tbl_list->count + 1, sizeof(*(tbl_list->tables)))) {
 
 		/* find correct position in table list and shift array if */
 		if (tbl_list->count > 0) {
-			inspos = tbl_list->count;
+			inspos = tbl_list->count - 1;
 
-			while (inspos > 0 && strcmp(tbl_list->tables[i].name, name) > 0) {
+			while (inspos > 0 && strcmp(tbl_list->tables[inspos].name, name) > 0) {
 				tbl_list[i] = tbl_list[i - 1];
 				inspos--;
 			}

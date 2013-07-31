@@ -218,31 +218,21 @@ pANTLR3_BASE_TREE oris_get_request_parse_tree(const char *name)
     return NULL;
 }
 
-char* oris_parse_request_tree(const pANTLR3_BASE_TREE parse_tree)
+pANTLR3_BASE_TREE oris_get_template_by_name(pANTLR3_STRING name)
 {
-	pANTLR3_COMMON_TREE_NODE_STREAM node_stream;
-	pconfigTree walker;
-    oris_parse_expr_t* expr;
-    char* retval = NULL;
+	ANTLR3_UINT32 i;
+	pANTLR3_BASE_TREE tmpl, inode;
+	pANTLR3_STRING iname;
 
-    if (!parse_tree) {
-        return NULL;
-    }
+	for (i = 1; i < parsing_state.templates->size(parsing_state.templates) + 1; i++) {
+		tmpl = parsing_state.templates->get(parsing_state.templates, i);
+		inode = tmpl->getChild(tmpl, 0);
+		iname = inode->getText(inode);
+		if (inode->getType(inode) == IDENTIFIER && iname->compareS(iname, name) == 0) {
+			return tmpl;
+		}
+	}
 
-    node_stream = antlr3CommonTreeNodeStreamNewTree(parse_tree, ANTLR3_SIZE_HINT);
-    walker = configTreeNew(node_stream);
-
-    expr = walker->expr(walker);
-    retval = oris_expr_as_string(expr);
-    oris_free_expr_value(expr);
-
-    node_stream->free(node_stream);
-    walker->free(walker);
-
-    return retval;
-}
-
-char* oris_get_parsed_request(const char *name)
-{
-    return oris_parse_request_tree(oris_get_request_parse_tree(name));
+    oris_log_f(LOG_WARNING, "template %s does not exist", name->chars);
+	return NULL;
 }

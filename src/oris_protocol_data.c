@@ -15,10 +15,19 @@ static void process_line(char* line, oris_application_info_t* info);
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
 static void oris_protocol_data_write(const void* buf, size_t bufsize, 
 	void* connection, oris_data_write_fn_t transfer);
+static void oris_protocol_data_free(struct oris_protocol* protocol);
 
 void oris_protocol_data_init(struct oris_protocol* self)
 {
 	self->write = (void*) oris_protocol_data_write;
+	self->destroy = oris_protocol_data_free;
+}
+
+static void oris_protocol_data_free(struct oris_protocol* protocol)
+{
+	oris_data_protocol_data_t* pdata = (oris_data_protocol_data_t*) protocol->data;
+	oris_free_and_null(pdata->buffer);
+	oris_protocol_free(protocol);
 }
 
 void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
@@ -88,21 +97,29 @@ static void process_line(char* line, oris_application_info_t* info)
 	*c = '\0';
 	tbl_name = s;
 
+	if (strlen(tbl_name) < 2) {
+		return;
+	}
+
+	last_char_index = strlen(tbl_name) - 1;
+	is_last_line = tbl_name[last_char_index] == '0';
+	is_response_line = tbl_name[last_char_index] == '!';
+	if (!is_response_line) {
+		tbl_name[last_char_index] = '\0';
+	}
+
 	tbl = oris_get_or_create_table(&info->data_tables, tbl_name, true);
 	if (!tbl) {
 		free(line);
 		return;
 	}
 
-	last_char_index = strlen(tbl_name) - 1;
-	is_last_line = tbl_name[last_char_index] == '1';
-	is_response_line = tbl_name[last_char_index] == '!';
-
-	if (is_response_line || (tbl->state == COMPLETE && !is_last_line)) {
+/*	if (is_response_line || (tbl->state == COMPLETE && !is_last_line)) {*/
+	if (is_response_line || (tbl->state == COMPLETE)) {
 		oris_table_clear(tbl);
 	}
 
-	oris_table_add_row(tbl, s + last_char_index + 1, ORIS_TABLE_ITEM_SEPERATOR);
+	oris_table_add_row(tbl, s + last_char_index + 2, ORIS_TABLE_ITEM_SEPERATOR);
 	tbl->state = (is_response_line || is_last_line) ? COMPLETE : RECEIVING;
 	if (tbl->state == COMPLETE) {
 		table_complete_cb(tbl, info);
@@ -115,7 +132,7 @@ static void process_line(char* line, oris_application_info_t* info)
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info)
 {
 	oris_automation_event_t e = { EVT_TABLE, tbl->name };
-	oris_log_f(LOG_INFO, "table %s received", tbl->name);
+	oris_log_f(LOG_INFO, "table %s received (%d lines)", tbl->name, tbl->row_count);
 
 	oris_automation_trigger(&e, info);
 }

@@ -7,10 +7,12 @@ connections:
 	;
 
 targets:
-    live: "https://ec2.example.com/"
-    main: "https://www.s14u.de/oris/backend/"
-    local: "http://localhost/oris/backend/"
-    archive: "http://www.havel-regatta-verein.de/oris/backend/"
+#    testing: "http://VirtualXP-54269/oris/backend"
+    testing: "http://127.0.0.1:43862/oris/backend"
+#    live: "https://ec2.example.com"
+#    main: "https://www.s14u.de/oris/backend"
+#    local: "http://localhost/oris/backend"
+#    archive: "http://www.havel-regatta-verein.de/oris/backend"
 	;
 
 on connection established:
@@ -19,16 +21,15 @@ on connection established:
 #on connection closed:
 #	request shutdown_event;
 
-
-on table ver!:
-	request quark;
+on table ver:
+	http post "/event/" + {VER.1} + "/meta" using event;
 	http put "/currentevent" with value {VER.1};
-#	http put "/events/{VER.1}/comps/" with template competition;
 
-#on table vrd:
-#	http put "/events/{VER.1}/comps/" with template competition;
-#	request startlist_from_vrd for each entry;
-#
+on table vrd:
+	http put ("/events/" + {VER.1} + "/comp/" + {VRD.1}) using competition for each record of VRD;
+	request splits for each record in VRD;
+	request startlist for each record in VRD;
+
 #on table stl:
 #	http put "/events/{VER.1}/comps/{STL.1}/startlist/" with template startlist;
 #
@@ -37,12 +38,31 @@ on table ver!:
 #
 #on command "create event":
 #	http put "/events/{VER.1}" with template event;
-#
-#
+
+template event:
+	title: {VER.2}
+	venue: {VER.3}
+	location: {VER.4}
+	date_from: TOKEN({VER.5}, 3, '.') + '-' + LPAD(TOKEN({VER.5}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VER.5}, 1, '.'), 2, '0')
+	date_to: TOKEN({VER.6}, 3, '.') + '-' + LPAD(TOKEN({VER.6}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VER.6}, 1, '.'), 2, '0')
+	sport: {VER.7}
+
 template competition:
 	id: {VRD.1}
-	label: "STRING" + 123 + {VRD.2} + TOKEN({VRD.2}, 1, "#")
+	class: {VRD.3}
+	label: {VRD.4}
+	datetime: TOKEN({VRD.6}, 3, '.') + '-' + LPAD(TOKEN({VRD.6}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VRD.6}, 1, '.'), 2, '0') + 'T' + {VRD.7} + ":00"
+	gender: {VRD.8}
+	qrule: {VRD.9}
+	state: {VRD.10}
+	round: {VRD.11}
+	heat: {VRD.12}
+	distance: {VRD.13}
+	race: {VRD.14} 
+#	athletes: {VRD.15} -- number of athletes (not required)
 
 requests:
 	current_event: "?VER"
-	startlist_from_vrd: "?STL|" + {VRD.1} + "|" + {VRD.1}
+	splits: "?STA|" + {VRD.1} + "|" + {VRD.1}
+	startlist: "?STL|" + {VRD.1} + "|" + {VRD.1}
+
