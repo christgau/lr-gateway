@@ -125,8 +125,6 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			config->targets.items = items;
 			config->targets.items[config->targets.count].name = strdup(name);
 			config->targets.items[config->targets.count].uri = evuri;
-			config->targets.items[config->targets.count].bev = NULL;
-			config->targets.items[config->targets.count].connection = NULL;
 			config->targets.items[config->targets.count].bev = 
 				bufferevent_socket_new(config->libevent_info.base, -1, BEV_OPT_CLOSE_ON_FREE);
             config->targets.items[config->targets.count].connection = 
