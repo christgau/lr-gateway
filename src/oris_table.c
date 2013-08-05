@@ -158,6 +158,7 @@ void oris_tables_finalize(oris_table_list_t* list)
 	}
 
 	list->count = 0;
+	oris_free_and_null(list->tables);
 }
 
 oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list, 

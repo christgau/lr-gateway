@@ -21,7 +21,6 @@ int oris_main_default(oris_application_info_t *info)
 		oris_log_f(LOG_CRIT, "could not init application (see above). Exiting");
 	}
 
-	oris_tables_init(&info->data_tables);
 	oris_interpreter_init(&info->data_tables);
 	oris_configuration_init();
 
@@ -41,7 +40,6 @@ int oris_main_default(oris_application_info_t *info)
 	/* cleanup */
 	oris_configuration_finalize();
 	oris_interpreter_finalize();
-	oris_tables_finalize(&info->data_tables);
 	oris_app_info_finalize(info);
 
 #if LIBEVENT_VERSION_NUMBER >= 0x02010100 

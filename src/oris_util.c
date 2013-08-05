@@ -14,13 +14,12 @@ bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size)
 	size_t alloc_size = n * blk_size;
 
 	/* overflow check */
-	if (n > SIZE_MAX/blk_size || ptr == NULL) {
-		return false; 
-	}
-
 	if (*ptr == NULL) {
-		newptr = malloc(blk_size);
+		newptr = calloc(n, blk_size);
 	} else {
+		if (n > SIZE_MAX/blk_size || ptr == NULL) {
+			return false; 
+		}
 		newptr = realloc(*ptr, alloc_size);
 	}
 
@@ -31,16 +30,6 @@ bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size)
 		return false;
 	}
 }
-
-/*
-void oris_free_and_null(void** ptr)
-{
-	if (ptr) {
-		free(*ptr);
-		*ptr = NULL;
-	}
-}
-*/
 
 bool oris_strtoint(const char* s, int* v)
 {
