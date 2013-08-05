@@ -23,7 +23,7 @@ bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size)
 		newptr = realloc(*ptr, alloc_size);
 	}
 
-	if (newptr != NULL) {
+	if (newptr) {
 		*ptr = newptr;
 		return true;
 	} else {

@@ -39,7 +39,7 @@ bool oris_table_add_row(oris_table_t* tbl, const char* s, char delim)
 
 void oris_table_init(oris_table_t* tbl)
 {
-	if (tbl != NULL) {
+	if (tbl) {
 		memset(tbl, 0, sizeof(*tbl));
 		tbl->current_row = -1;
 		tbl->name = NULL;
@@ -63,7 +63,7 @@ void oris_table_clear(oris_table_t* tbl)
 
 void oris_table_finalize(oris_table_t* tbl)
 {
-	if (tbl != NULL) {
+	if (tbl) {
 		oris_table_clear(tbl);
 
 		free(tbl->name);
@@ -210,7 +210,7 @@ const char* oris_tables_get_field_by_number(oris_table_list_t* list,
 	
 	tbl = oris_get_table(list, name);
 
-	return (tbl != NULL ? oris_table_get_field_by_index(tbl, index) : NULL);
+	return (tbl ? oris_table_get_field_by_index(tbl, index) : NULL);
 }
 
 const char* oris_tables_get_field(oris_table_list_t* list, const char* name, 
@@ -220,5 +220,5 @@ const char* oris_tables_get_field(oris_table_list_t* list, const char* name,
 	
 	tbl = oris_get_table(list, name);
 
-	return (tbl != NULL ? oris_table_get_field(tbl, field) : NULL);
+	return (tbl ? oris_table_get_field(tbl, field) : NULL);
 }

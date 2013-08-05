@@ -99,7 +99,7 @@ size_t oris_protocol_recv(struct evbuffer* input, char** buffer, size_t* buf_siz
 	}
 
 	p = realloc(*buffer, *buf_capacity);
-	if (p != NULL) {
+	if (p) {
 		*buffer = p;
 	} else {
 		oris_log_f(LOG_ERR, "could not allocate additional recv buffer (out of memory?). Dropping data");
@@ -118,7 +118,7 @@ oris_protocol_t* oris_protocol_clone(oris_protocol_t* src)
 {
 	oris_protocol_t* retval = oris_protocol_create();
 
-	if (retval != NULL) {
+	if (retval) {
 		retval->name = strdup(src->name);
 		retval->data = src->data;
 		retval->destroy = src->destroy;

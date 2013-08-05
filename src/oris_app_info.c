@@ -147,17 +147,17 @@ void oris_targets_clear(oris_http_target_t* targets, int *count)
 	int i;
 
 	for (i = 0; i < *count; i++) {
-		if (targets[i].uri != NULL) {
+		if (targets[i].uri) {
 			evhttp_uri_free(targets[i].uri);
 			targets[i].uri = NULL;
 		}
 
-		if (targets[i].name != NULL) {
+		if (targets[i].name) {
 			free(targets[i].name);
 			targets[i].name = NULL;
 		}
 
-		if (targets[i].connection != NULL) {
+		if (targets[i].connection) {
 			evhttp_connection_free(targets[i].connection);
 			targets[i].connection = NULL;
 		}
@@ -173,7 +173,7 @@ void oris_create_connection(oris_application_info_t* info, const char* name, ori
 
 	if (uri) {
 		oris_connection_t* c = oris_create_connection_from_uri(uri, name, (void*) info);
-		if (c != NULL) {
+		if (c) {
 			oris_log_f(LOG_DEBUG, "new connection \%s -> \%s", name, v_str);
 			oris_connections_add(&info->connections, c);
 			/* uri is freed by connection */

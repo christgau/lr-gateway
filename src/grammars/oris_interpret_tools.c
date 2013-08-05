@@ -60,7 +60,7 @@ bool oris_interpreter_init(oris_table_list_t* tbls)
 	oris_expr_mem_pool = create_mem_pool(sizeof(oris_parse_expr_t));
 	data_tbls = tbls;
 
-	return (oris_expr_mem_pool != NULL);
+	return (oris_expr_mem_pool);
 }
 
 void oris_interpreter_finalize(void)
@@ -104,7 +104,7 @@ oris_parse_expr_t* oris_alloc_string_value(const pANTLR3_STRING s)
 	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_STRING;
-		if (s->chars != NULL) {
+		if (s->chars) {
 			retval->value.as_string = strFactory->newStr(strFactory, s->chars);
 		} else {
 			retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) "");
@@ -147,7 +147,7 @@ oris_parse_expr_t* oris_alloc_value_from_rec_s(const pANTLR3_STRING tbl, const p
 
 void oris_free_expr_value(oris_parse_expr_t* v)
 {
-	if (v != NULL) {
+	if (v) {
 		if (v->type == ET_STRING && v->value.as_string) {
 			v->value.as_string->factory->destroy(
 					v->value.as_string->factory,
@@ -351,7 +351,7 @@ char* oris_expr_as_string(const oris_parse_expr_t* expr)
 
 bool oris_expr_as_int(const oris_parse_expr_t* expr, int* v)
 {
-	int retval = expr != NULL;
+	int retval = expr;
 	int tmp;
 
 	if (retval) {

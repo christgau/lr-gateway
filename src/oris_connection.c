@@ -63,11 +63,11 @@ void oris_connection_send(oris_connection_t* connection, const void* buf, size_t
 
 void oris_connection_finalize(oris_connection_t* connection)
 {
-	if (connection->name != NULL) {
+	if (connection->name) {
 		free(connection->name);
 	}
 
-	if (connection->protocol != NULL && connection->protocol->destroy != NULL) {
+	if (connection->protocol && connection->protocol->destroy) {
 		connection->protocol->destroy(connection->protocol);
 	} else {
 		oris_free_and_null(connection->protocol);
@@ -107,7 +107,7 @@ int oris_connections_parse_config(yaml_event_t event, void* data, int level, boo
 			uri = evhttp_uri_parse((const char*) event.data.scalar.value);
 			if (uri) {
 				connection = oris_create_connection_from_uri(uri, key, data);
-				if (connection != NULL) {
+				if (connection) {
 					oris_log_f(LOG_INFO, "new connection: %s -> %s", 
 						key, event.data.scalar.value);
 					oris_connections_add(connections, connection);

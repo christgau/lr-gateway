@@ -9,7 +9,7 @@ static int logLevel;
 
 void oris_init_log(const char* logfilename, int desiredLogLevel)
 {
-	if (logfilename != NULL) {
+	if (logfilename) {
 		logFile = fopen(logfilename, "a");
 	} else {
 		logFile = stderr;
@@ -65,7 +65,7 @@ void oris_log_f(int severity, char* fmt, ...)
 {
 	va_list arglist;
 
-	if (logFile != NULL && severity <= logLevel) {
+	if (logFile && severity <= logLevel) {
 		oris_log_time();
 		oris_log_severity(severity);
         	va_start(arglist, fmt);
@@ -77,7 +77,7 @@ void oris_log_f(int severity, char* fmt, ...)
 
 void oris_logs(int severity, const char* s)
 {
-	if (logFile != NULL && severity <= logLevel) {
+	if (logFile && severity <= logLevel) {
 		oris_log_time();
 		fputs(s, logFile);
 	}
@@ -86,7 +86,7 @@ void oris_logs(int severity, const char* s)
 
 void oris_finalize_log(void)
 {
-	if (logFile != NULL && logFile != stderr) {
+	if (logFile && logFile != stderr) {
 		fclose(logFile);
 	}
 }

@@ -99,7 +99,7 @@ bool oris_load_configuration(oris_application_info_t* info)
 
     parsing_state.templates = antlr3ListNew(32); /* we expect no more than 32 templates */
     templates_tree = get_subtree_by_type(parsing_state.parseTree.tree, TEMPLATES);
-    if (templates_tree != NULL) {
+    if (templates_tree) {
         parsing_state.templates = get_nodes_of_type(templates_tree, TEMPLATE, parsing_state.templates);
     }
 
@@ -153,7 +153,7 @@ static pANTLR3_BASE_TREE get_subtree_by_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT
 	for (i = 0; i < child_count; i++) {
 		child = tree->getChild(tree, i);
 		child = get_subtree_by_type(child, i);
-		if (child != NULL) {
+		if (child) {
 			return child;
 		}
 	}

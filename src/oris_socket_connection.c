@@ -165,18 +165,18 @@ void oris_socket_connection_finalize(oris_socket_connection_t* connection)
 {
 	oris_socket_connection_t* sc = (oris_socket_connection_t*) connection;
 
-	if (sc->uri != NULL) {
+	if (sc->uri) {
 		evhttp_uri_free(sc->uri);
 		sc->uri = NULL;
 	}
 
-	if (sc->bufev != NULL) {
+	if (sc->bufev) {
 		oris_log_f(LOG_INFO, "freeing da bufev");
 		bufferevent_free(sc->bufev); /* causes leaks/problems? */
 		sc->bufev = NULL;
 	}
 
-	if (sc->reconnect_timeout_event != NULL) {
+	if (sc->reconnect_timeout_event) {
 		event_free(sc->reconnect_timeout_event);
 		sc->reconnect_timeout_event = NULL;
 	}

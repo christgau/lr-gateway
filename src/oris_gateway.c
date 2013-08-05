@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 	retval = EXIT_SUCCESS;
 
 	if (oris_handle_args(&info) == true) {
-		if (info.main != NULL) {
+		if (info.main) {
 			event_enable_debug_mode();
 			oris_init_log(NULL, info.log_level);
 			retval = info.main(&info);

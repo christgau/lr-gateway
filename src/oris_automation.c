@@ -18,8 +18,8 @@ static void oris_perform_http_on_targets(oris_application_info_t* info,
 
 bool oris_is_same_automation_event(oris_automation_event_t* a, oris_automation_event_t* b)
 {
-	return a != NULL && b != NULL && a->type == b->type && 
-		a->name != NULL && b->name != NULL && strcasecmp(a->name, b->name) == 0;
+	return a && b && a->type == b->type && 
+		a->name && b->name && strcasecmp(a->name, b->name) == 0;
 }
 
 
@@ -79,7 +79,7 @@ void oris_automation_request_action(oris_application_info_t* info,
 {
 	char* r = oris_get_parsed_request(request_name);
 
-	if (r != NULL) {
+	if (r) {
 		oris_log_f(LOG_DEBUG, "sending requesting \%s\n", r);
 		oris_connections_send(&info->connections, "data", r, strlen(r));
 		free(r);
@@ -149,7 +149,7 @@ static void oris_perform_http_on_targets(oris_application_info_t* info,
 	body = body;
 	for (i = 0; i < info->targets.count; i++) {
 		request = evhttp_request_new(http_request_done_cb, &(info->targets.items[i]));
-		if (request != NULL) {
+		if (request) {
 			output_headers = evhttp_request_get_output_headers(request);
 			evhttp_add_header(output_headers, "Host", evhttp_uri_get_host(info->targets.items[i].uri));
 			evhttp_add_header(output_headers, "User-Agent", ORIS_USER_AGENT);
@@ -335,11 +335,11 @@ void oris_automation_http_action(oris_application_info_t* info,
 
 	buf = evbuffer_new();
 
-    if (tmpl_name != NULL) {
-		tbl = tbl_name != NULL ? oris_get_table(&info->data_tables, tbl_name) : NULL;
+    if (tmpl_name) {
+		tbl = tbl_name ? oris_get_table(&info->data_tables, tbl_name) : NULL;
 		tmpl = oris_get_template_by_name(tmpl_name->getText(tmpl_name));
 
-		if (tbl != NULL) {
+		if (tbl) {
 			/* table given: now perform http record-wise or for the whole table */
 			oris_perform_http_on_table(info, method, url, buf, tmpl, tbl, perform_per_record);
 		} else {
@@ -348,7 +348,7 @@ void oris_automation_http_action(oris_application_info_t* info,
 			oris_perform_http_with_buffer(info, method, url, buf);
 		}
 
-	} else if (value_expr != NULL) {
+	} else if (value_expr) {
 		oris_dump_expr_value_to_buffer(buf, value_expr);
 		oris_perform_http_with_buffer(info, method, url, buf);
 		oris_free_expr_value(value_expr);
