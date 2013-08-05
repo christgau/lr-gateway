@@ -73,6 +73,8 @@ static bool oris_init_libevent(struct oris_application_info *info)
 		event_set_log_callback(oris_libevent_log_cb);
 		event_add(info->sigint_event, NULL);
 
+		oris_log_f(LOG_DEBUG, "using libevent %s", event_get_version());
+
 		return true;
 	}
 }
