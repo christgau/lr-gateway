@@ -351,7 +351,7 @@ char* oris_expr_as_string(const oris_parse_expr_t* expr)
 
 bool oris_expr_as_int(const oris_parse_expr_t* expr, int* v)
 {
-	int retval = expr;
+	int retval = expr != NULL;
 	int tmp;
 
 	if (retval) {
