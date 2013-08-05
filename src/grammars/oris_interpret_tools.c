@@ -148,7 +148,7 @@ oris_parse_expr_t* oris_alloc_value_from_rec_s(const pANTLR3_STRING tbl, const p
 void oris_free_expr_value(oris_parse_expr_t* v)
 {
 	if (v != NULL) {
-		if (v->type == ET_STRING && v->value.as_string != NULL) {
+		if (v->type == ET_STRING && v->value.as_string) {
 			v->value.as_string->factory->destroy(
 					v->value.as_string->factory,
 					v->value.as_string);
@@ -404,14 +404,11 @@ static oris_parse_expr_t* oris_built_in_length(pANTLR3_LIST args)
 
 static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args)
 {
-	oris_parse_expr_t* arg = args->get(args, 1);
-	oris_expr_cast_to_str(arg);
+	oris_parse_expr_t* arg = oris_alloc_string_value(args->get(args, 1));
 
 	arg->value.as_string->insert(arg->value.as_string, 0, "\"");
 	arg->value.as_string->append(arg->value.as_string, "\"");
-
-	args->remove(args, 1);
-
+	
 	return arg;
 }
 
@@ -459,40 +456,34 @@ static oris_parse_expr_t* oris_built_in_token(pANTLR3_LIST args)
 
 static oris_parse_expr_t* oris_built_in_lpad(pANTLR3_LIST args)
 {
-	oris_parse_expr_t* str_arg = args->get(args, 1);
+	oris_parse_expr_t* str_arg = oris_alloc_string_value(args->get(args, 1));
 	oris_parse_expr_t* minlen_arg = args->get(args, 2);
 	oris_parse_expr_t* fill_arg = args->get(args, 3);
 	pANTLR3_STRING fill;
 	int minlen;
 
-	oris_expr_cast_to_str(str_arg);
 	oris_expr_cast_to_str(fill_arg);
-
 	fill = fill_arg->value.as_string;
 
 	if (oris_expr_as_int(minlen_arg, &minlen)) {
 		while ((int) str_arg->value.as_string->len < minlen) {
-			
 			str_arg->value.as_string->insertS(str_arg->value.as_string, 0, fill);
 		}
-	}	
+	}
 	
-	args->remove(args, 1);
 	return str_arg;
 }
 
 
 static oris_parse_expr_t* oris_built_in_rpad(pANTLR3_LIST args)
 {
-	oris_parse_expr_t* str_arg = args->get(args, 1);
+	oris_parse_expr_t* str_arg = oris_alloc_string_value(args->get(args, 1));
 	oris_parse_expr_t* minlen_arg = args->get(args, 2);
 	oris_parse_expr_t* fill_arg = args->get(args, 3);
 	pANTLR3_STRING fill;
 	int minlen;
 
-	oris_expr_cast_to_str(str_arg);
 	oris_expr_cast_to_str(fill_arg);
-
 	fill = fill_arg->value.as_string;
 
 	if (oris_expr_as_int(minlen_arg, &minlen)) {
@@ -501,7 +492,6 @@ static oris_parse_expr_t* oris_built_in_rpad(pANTLR3_LIST args)
 		}
 	}	
 	
-	args->remove(args, 1);
 	return str_arg;
 }
 
