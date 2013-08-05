@@ -129,7 +129,8 @@ int main(int argc, char **argv)
 
 	if (oris_handle_args(&info) == true) {
 		if (info.main) {
-			event_enable_debug_mode();
+			/* debug move causes memory leak in bufferevents */
+			/* event_enable_debug_mode();*/
 			oris_init_log(NULL, info.log_level);
 			retval = info.main(&info);
 		}
