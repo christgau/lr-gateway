@@ -163,6 +163,7 @@ void oris_free_expr_value_void(void* v)
 	oris_free_expr_value(v);
 }
 
+
 static void oris_expr_cast_to_str(oris_parse_expr_t *r)
 {
 	int iv;
@@ -379,6 +380,16 @@ bool oris_expr_as_bool(const oris_parse_expr_t* expr, bool* v)
 	} 
 
 	return false;
+}
+
+bool oris_expr_as_bool_and_free(oris_parse_expr_t* e)
+{
+	bool retval = false;
+
+	oris_expr_as_bool(e, &retval);
+	oris_free_expr_value(e);
+
+	return retval;
 }
 
 void oris_expr_dump(const oris_parse_expr_t* v)

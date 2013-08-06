@@ -21,6 +21,7 @@ tokens {
     ITERATE;
     VALUE;
     TEMPLATES;
+	COND_ACTION;
 
 
     AND='and';
@@ -62,7 +63,7 @@ targets
     ;
 
 event
-    : ON object COLON (action)* -> ^(EVENT object ACTIONLIST action*)
+    : ON object COLON (conditional_action)* -> ^(EVENT object ACTIONLIST (conditional_action)*)
     ;
 
 object
@@ -76,10 +77,13 @@ connection_state
     | CLOSED
     ;
 
+conditional_action
+	: action
+	| 'if' expr action -> ^(COND_ACTION expr action) 
+	;
+
 action
-//  : HTTP http_method url=expr ('with' 'value') value=expr SEMICOLON -> ^(HTTP http_method $url $value)
-//  : HTTP http_method url=expr ('with' 'template') tmp_name=IDENTIFIER SEMICOLON -> ^(HTTP http_method $url $tmp_name)
-    : HTTP^ http_method url=expr ('using'! IDENTIFIER ('for'! ('table' | ('each'! 'record' 'of'!)) IDENTIFIER)? | 'with'! 'value'! expr) SEMICOLON! 
+    : HTTP^ http_method url=expr ('using'! IDENTIFIER ('for'! ('table' | ('each'! 'record' 'of'!)) IDENTIFIER)? | 'with'! 'value'! expr)? SEMICOLON! 
     | REQUEST req=IDENTIFIER ('for' 'each' 'record' 'in') tbl=IDENTIFIER SEMICOLON -> ^(ITERATE $req $tbl)
     | REQUEST^ IDENTIFIER SEMICOLON!
     ;

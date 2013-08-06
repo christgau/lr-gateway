@@ -58,7 +58,7 @@ automation[oris_application_info_t* info, oris_automation_event_t* automation_ev
 event[oris_application_info_t* info, oris_automation_event_t* event]
 	@init {	in_event = true; }
 	@after { in_event = false; }
-	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ACTIONLIST action[info]*) 
+	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ACTIONLIST conditional_action[info]*) 
 	;
 
 object returns [oris_automation_event_t event]
@@ -67,12 +67,17 @@ object returns [oris_automation_event_t event]
 	| ^(COMMAND cmd=STRING) { event.type = EVT_COMMAND; event.name = $cmd.text->chars; }
 	;
 
+conditional_action [oris_application_info_t* info]
+	: action[info]
+	| ^(COND_ACTION cond=expr{ do_action = do_action && oris_expr_as_bool_and_free(cond); } action[info])
+	;
+
 action[oris_application_info_t* info]
 	@init {	in_action = true; }
 	@after { in_action = false;	}
 	: ^(ITERATE req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_iterate_action(info, $req.text->chars, $tbl.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, $name.text->chars); }
-	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr ) ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? $tbl.text->chars : NULL, $it.value); }
+	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? $tbl.text->chars : NULL, $it.value); }
 	;
 
 http_method returns [enum evhttp_cmd_type http_method]

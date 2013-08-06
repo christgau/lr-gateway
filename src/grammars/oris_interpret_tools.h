@@ -51,6 +51,7 @@ oris_parse_expr_t* oris_expr_eval_function(const pANTLR3_STRING fname,
 char* oris_expr_as_string(const oris_parse_expr_t* expr);
 bool oris_expr_as_int(const oris_parse_expr_t* expr, int* v);
 bool oris_expr_as_bool(const oris_parse_expr_t* expr, bool* v);
+bool oris_expr_as_bool_and_free(oris_parse_expr_t* e);
 
 void oris_expr_dump(const oris_parse_expr_t* v);
 
