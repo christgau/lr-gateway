@@ -352,7 +352,9 @@ void oris_automation_http_action(oris_application_info_t* info,
 		oris_dump_expr_value_to_buffer(buf, value_expr);
 		oris_perform_http_with_buffer(info, method, url, buf);
 		oris_free_expr_value(value_expr);
-    }
+    } else {
+		oris_perform_http_with_buffer(info, method, url, buf);
+	}
 
 	evbuffer_free(buf);
 }

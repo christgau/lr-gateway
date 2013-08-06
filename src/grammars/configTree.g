@@ -73,7 +73,7 @@ conditional_action [oris_application_info_t* info]
 	;
 
 action[oris_application_info_t* info]
-	@init {	in_action = true; }
+	@init {	in_action = true; value = NULL; }
 	@after { in_action = false;	}
 	: ^(ITERATE req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_iterate_action(info, $req.text->chars, $tbl.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, $name.text->chars); }
