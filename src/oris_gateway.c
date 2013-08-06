@@ -64,7 +64,8 @@ int oris_main_print_version(oris_application_info_t *info)
 int oris_print_usage(oris_application_info_t* info)
 {
 	printf("usage %s [options]\n\n", info->argv[0]);
-	printf("options: \n\t--verbose\t - verbose output\n");
+	printf("options: \n\t--verbose\t - verbose output (same as info loglevel)\n");
+	printf("\t--loglevel level - sets the loglevel to error, warn, info or debug\n");
 	printf("\t--version\t - print version and exit\n");
 	printf("\t--help   \t - print this help\n");
 
@@ -80,12 +81,15 @@ bool oris_handle_args(oris_application_info_t *info)
 	static struct option long_opts[] = {
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
+		{ "loglevel", required_argument, NULL, 'l' },
 /*		{ "logfile", no_argument, NULL, 'L' },*/
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
-	opt_code = getopt_long(info->argc, info->argv, "vVlh?", long_opts, &opt_idx);
+	const char* short_opt_str = "vVl:h?";
+
+	opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	while (opt_code != -1) {
 		switch (opt_code) {
 			case 'v':
@@ -94,6 +98,21 @@ bool oris_handle_args(oris_application_info_t *info)
 			case 'V':
 				retval = true;
 				info->main = &oris_main_print_version;
+				break;
+			case 'l':
+				if (strcmp(optarg, "debug") == 0) {
+					info->log_level = LOG_DEBUG;
+				} else if (strcmp(optarg, "info") == 0) {
+					info->log_level = LOG_INFO;
+				} else if (strcmp(optarg, "warn") == 0) {
+					info->log_level = LOG_WARNING;
+				} else if (strcmp(optarg, "error") == 0) {
+					info->log_level = LOG_ERR;
+				} else {
+					fprintf(stderr, "invalid log level %s\n", optarg);
+					info->main = &oris_print_usage; 
+					retval = true;
+				}
 				break;
 			case '?':
 			case 'h':
@@ -104,7 +123,7 @@ bool oris_handle_args(oris_application_info_t *info)
 				fprintf(stderr, "unregonized option (%d)\n", opt_code);
 				break;
 		}
-		opt_code = getopt_long(info->argc, info->argv, "vVlh", long_opts, &opt_idx);
+		opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	}
 
 	if (retval == false) {
