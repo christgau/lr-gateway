@@ -71,6 +71,36 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 	}
 }
 
+/* conversion of ISO-8859-1 to UTF-8 (from stackoverflow) */
+static char* strdup_iso8859_to_utf8(char* line)
+{
+	unsigned char *c, *retval, *out;
+	size_t size = 0;
+
+	for (c = (unsigned char*) line; *c; c++, size++) {
+		if (*c >= 128) {
+			size++;
+		}
+	}
+
+	retval = out = malloc(size);
+	if (retval == NULL) {
+		return NULL;
+	}
+	
+	c = (unsigned char*) line;
+	while (*c) {
+		if (*c < 128) {
+			*out++ = *c++;
+		} else {
+			*out++ = 0xc2 + (*c > 0xbf);
+			*out++ = 0x80 + (*c++ & 0x3f);
+		}
+	}
+
+	return (char*) retval;
+}
+
 static void process_line(char* line, oris_application_info_t* info)
 {
 	oris_table_t* tbl;
@@ -82,7 +112,7 @@ static void process_line(char* line, oris_application_info_t* info)
 		return;
 	}
 
-	s = strdup(line);
+	s = strdup_iso8859_to_utf8(line);
 	c = s;
 
 	/* extract table name */
