@@ -467,43 +467,51 @@ static oris_parse_expr_t* oris_built_in_token(pANTLR3_LIST args)
 
 static oris_parse_expr_t* oris_built_in_lpad(pANTLR3_LIST args)
 {
-	oris_parse_expr_t* str_arg = oris_alloc_string_value(args->get(args, 1));
+	oris_parse_expr_t* str_arg = args->get(args, 1);
 	oris_parse_expr_t* minlen_arg = args->get(args, 2);
 	oris_parse_expr_t* fill_arg = args->get(args, 3);
+	oris_parse_expr_t* str;
 	pANTLR3_STRING fill;
 	int minlen;
+
+	oris_expr_cast_to_str(str_arg);
+	str = oris_alloc_string_value(str_arg->value.as_string);
 
 	oris_expr_cast_to_str(fill_arg);
 	fill = fill_arg->value.as_string;
 
 	if (oris_expr_as_int(minlen_arg, &minlen)) {
-		while ((int) str_arg->value.as_string->len < minlen) {
-			str_arg->value.as_string->insertS(str_arg->value.as_string, 0, fill);
+		while ((int) str->value.as_string->len < minlen) {
+			str->value.as_string->insertS(str->value.as_string, 0, fill);
 		}
 	}
 	
-	return str_arg;
+	return str;
 }
 
 
 static oris_parse_expr_t* oris_built_in_rpad(pANTLR3_LIST args)
 {
-	oris_parse_expr_t* str_arg = oris_alloc_string_value(args->get(args, 1));
+	oris_parse_expr_t* str_arg = args->get(args, 1);
 	oris_parse_expr_t* minlen_arg = args->get(args, 2);
 	oris_parse_expr_t* fill_arg = args->get(args, 3);
+	oris_parse_expr_t* str;
 	pANTLR3_STRING fill;
 	int minlen;
+
+	oris_expr_cast_to_str(str_arg);
+	str = oris_alloc_string_value(str_arg->value.as_string);
 
 	oris_expr_cast_to_str(fill_arg);
 	fill = fill_arg->value.as_string;
 
 	if (oris_expr_as_int(minlen_arg, &minlen)) {
-		while ((int) str_arg->value.as_string->len < minlen) {
-			str_arg->value.as_string->appendS(str_arg->value.as_string, fill);
+		while ((int) str->value.as_string->len < minlen) {
+			str->value.as_string->appendS(str->value.as_string, fill);
 		}
 	}	
 	
-	return str_arg;
+	return str;
 }
 
 
