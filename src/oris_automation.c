@@ -146,7 +146,6 @@ static void oris_perform_http_on_targets(oris_application_info_t* info,
 	oris_log_f(LOG_INFO, "http %s %s (%lu bytes body) ", oris_get_http_method_string(method),
 			uri, evbuffer_get_length(body));
 
-	body = body;
 	for (i = 0; i < info->targets.count; i++) {
 		request = evhttp_request_new(http_request_done_cb, &(info->targets.items[i]));
 		if (request) {
@@ -155,7 +154,9 @@ static void oris_perform_http_on_targets(oris_application_info_t* info,
 			evhttp_add_header(output_headers, "User-Agent", ORIS_USER_AGENT);
 			evhttp_add_header(output_headers, "Accept", "application/json, text/plain");
 			evhttp_add_header(output_headers, "Accept-Charset", "utf-8");
-			evhttp_add_header(output_headers, "Content-Type", "application/json");
+			if (evbuffer_get_length(body) > 0) {
+				evhttp_add_header(output_headers, "Content-Type", "application/json");
+			}
 			evutil_snprintf(url_buf, MAX_URL_SIZE - 1, "%s%s", evhttp_uri_get_path(
 					info->targets.items[i].uri), uri);
 
@@ -347,7 +348,6 @@ void oris_automation_http_action(oris_application_info_t* info,
 			oris_parse_template(buf, tmpl, true);
 			oris_perform_http_with_buffer(info, method, url, buf);
 		}
-
 	} else if (value_expr) {
 		oris_dump_expr_value_to_buffer(buf, value_expr);
 		oris_perform_http_with_buffer(info, method, url, buf);
