@@ -92,7 +92,6 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 {
 	struct timeval timeout;
 	oris_socket_connection_t* connection = arg;
-	oris_log_f(LOG_INFO, "%d", events);
 
 	if (events & BEV_EVENT_CONNECTED) {
 		oris_log_f(LOG_INFO, "connection '%s' connected %d", connection->base.name, events);	
@@ -156,8 +155,6 @@ bool oris_socket_connection_init(oris_socket_connection_t* connection, const cha
 	bufferevent_socket_connect_hostname(connection->bufev, info->dns_base, AF_UNSPEC, 
 		evhttp_uri_get_host(connection->uri), evhttp_uri_get_port(connection->uri));
 
-	oris_log_f(LOG_INFO, "init socket con %s", name);
-
 	return true;
 }
 
@@ -171,7 +168,6 @@ void oris_socket_connection_finalize(oris_socket_connection_t* connection)
 	}
 
 	if (sc->bufev) {
-		oris_log_f(LOG_INFO, "freeing da bufev");
 		bufferevent_free(sc->bufev); /* causes leaks/problems? */
 		sc->bufev = NULL;
 	}
@@ -300,10 +296,6 @@ void oris_server_connection_free(oris_connection_t* connection)
 		event_free(((oris_server_connection_t*) connection)->listen_event);
 	}
 
-	/* (this seems to be wrong and causes memory leaks)
-	oris_socket_connection_finalize(&((oris_server_connection_t*)  connection)->base);
-	free(connection);
-	*/
 	oris_socket_connection_free(connection);
 }
 
@@ -335,7 +327,7 @@ static void oris_server_socket_event_cb(struct bufferevent *bev, short event, vo
 	oris_log_f(LOG_DEBUG, "event on server connection %d\n", event);
 
 	if (event & BEV_EVENT_EOF) {
-		oris_log_f(LOG_DEBUG, "connection to client closed");
+		oris_log_f(LOG_INFO, "connection to client closed");
 	} else if (event & BEV_EVENT_ERROR) {
 
 	} else if (event & BEV_EVENT_TIMEOUT) {
