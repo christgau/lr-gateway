@@ -7,7 +7,7 @@ INCLUDEPATHS=-I$(HOME)/include -I. -I./deps/mempool -I./grammars
 WARNFLAGS=-Wall -Wextra
 CFLAGS=-g -O0 $(INCLUDEPATHS)
 
-LDFLAGS=-g -levent -L$(HOME)/lib -L$(ANTLR) -lantlr3c
+LDFLAGS=-g -levent -L$(HOME)/lib -L$(ANTLR) -lantlr3c $(shell pkg-config --libs openssl)
 
 TARGET=gateway
 MAINFILE=oris_gateway.c

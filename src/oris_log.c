@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <openssl/err.h>
 
 #include "oris_log.h"
 
@@ -80,6 +81,15 @@ void oris_logs(int severity, const char* s)
 	if (logFile && severity <= logLevel) {
 		oris_log_time();
 		fputs(s, logFile);
+	}
+}
+
+
+void oris_log_ssl_error(int severity)
+{
+	if (logFile && severity <= logLevel) {
+		oris_log_time();
+		ERR_print_errors_fp(logFile);
 	}
 }
 

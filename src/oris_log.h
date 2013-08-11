@@ -19,6 +19,8 @@ void oris_init_log(const char* logfilename, int desiredLogLevel);
 void oris_log_f(int severity, char* fmt, ...);
 void oris_logs(int severity, const char* s);
 
+void oris_log_ssl_error(int severity);
+
 
 /**
  * oris_finalize_log()
