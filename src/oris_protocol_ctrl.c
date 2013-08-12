@@ -42,6 +42,8 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 static void process_command(const char* cmd, oris_application_info_t* info, 
 	struct evbuffer* output)
 {
+	output = output;
+
 	oris_log_f(LOG_INFO, "got command >%s<", cmd);
 	if (strcmp(cmd, "terminate") == 0 || strcmp(cmd, "exit") == 0) {
 		oris_log_f(LOG_INFO, "exiting by external command");
@@ -56,9 +58,10 @@ static void process_command(const char* cmd, oris_application_info_t* info,
 		oris_log_f(LOG_INFO, "generating comps for today");
 	} else if (strcmp(cmd, "produce tomorrow") == 0) {
 		oris_log_f(LOG_INFO, "generating comps for tomorrow");
+	} else if (strcmp(cmd, "dump") == 0) {
+		oris_tables_dump_to_file(&info->data_tables, info->dump_fn);
+		evbuffer_add_printf(output, "dump resides in %s", info->dump_fn);
 	} else {
 		oris_log_f(LOG_INFO, "unknown remote command '%s'", cmd);
-	}
-
-	output = output;
+	} 
 }
