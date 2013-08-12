@@ -17,6 +17,7 @@ SOURCES=\
 	oris_automation.c \
 	oris_configuration.c \
 	oris_connection.c \
+	oris_http.c \
 	oris_kvpair.c \
 	oris_log.c \
 	oris_protocol.c \
