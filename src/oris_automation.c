@@ -1,5 +1,4 @@
 #include <string.h>
-#include <errno.h>
 
 #include "oris_util.h"
 #include "oris_log.h"
