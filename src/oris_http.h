@@ -3,6 +3,7 @@
 
 #include <event2/bufferevent.h>
 #include <event2/http.h>
+#include <openssl/ssl.h>
 
 #include "oris_libevent.h"
 
@@ -12,6 +13,7 @@ typedef struct oris_http_target {
 	struct evhttp_uri* uri;
     struct evhttp_connection* connection;
 	struct bufferevent* bev;
+	SSL* ssl;
 } oris_http_target_t;
 
 

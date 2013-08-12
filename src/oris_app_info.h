@@ -1,17 +1,20 @@
 #ifndef __ORIS_APP_INFO_H
 #define __ORIS_APP_INFO_H
 
+#include "oris_interpret_tools.h"
+
+#include <openssl/ssl.h>
 #include "oris_http.h"
 #include "oris_table.h"
 #include "oris_libevent.h"
 #include "oris_connection.h"
-#include "oris_interpret_tools.h"
 
 /* main application state and configuration is held herein */
 typedef struct oris_application_info {
 	oris_libevent_base_info_t libevent_info;
 	oris_table_list_t data_tables;
 	oris_connection_list_t connections;
+	SSL_CTX* ssl_ctx;
 
 	struct {
 		oris_http_target_t* items;
@@ -24,6 +27,8 @@ typedef struct oris_application_info {
 
 	bool paused;
 	int log_level;
+	char* dump_fn;
+
 	int argc;
 	char** argv;
 } oris_application_info_t;
