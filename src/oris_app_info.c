@@ -131,6 +131,21 @@ bool oris_app_info_init(oris_application_info_t* info)
 	return oris_init_libevent(info) && oris_init_ssl(info);
 }
 
+static void oris_finalize_ssl(oris_application_info_t* info)
+{
+	SSL_CTX_free(info->ssl_ctx);
+
+	ERR_remove_state(0);
+	ENGINE_cleanup();
+	CONF_modules_unload(1);
+
+	CONF_modules_free();
+	ERR_free_strings();
+	EVP_cleanup();
+	CRYPTO_cleanup_all_ex_data();
+	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+}
+
 void oris_app_info_finalize(oris_application_info_t* info)
 {
 	oris_tables_finalize(&info->data_tables);
@@ -145,19 +160,7 @@ void oris_app_info_finalize(oris_application_info_t* info)
 	evdns_base_free(info->libevent_info.dns_base, 0);
 	event_base_free(info->libevent_info.base);
 
-	SSL_CTX_free(info->ssl_ctx);
-
-	ERR_remove_state(0);
-	ENGINE_cleanup();
-	CONF_modules_unload(1);
-
-	CONF_modules_free();
-
-	ERR_free_strings();
-	EVP_cleanup();
-
-	CRYPTO_cleanup_all_ex_data();
-	sk_SSL_COMP_free(SSL_COMP_get_compression_methods());
+	oris_finalize_ssl(info);
 }
 
 void oris_config_add_target(oris_application_info_t* config, const char* name, const char* uri)
