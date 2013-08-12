@@ -89,6 +89,7 @@ bool oris_handle_args(oris_application_info_t *info)
 
 	const char* short_opt_str = "vVl:h?";
 
+	info->log_level = LOG_ERR;
 	opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	while (opt_code != -1) {
 		switch (opt_code) {
