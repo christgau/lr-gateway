@@ -1,5 +1,8 @@
 #include <errno.h>
 
+#include <event2/bufferevent_ssl.h>
+#include <openssl/err.h>
+
 #include "oris_log.h"
 #include "oris_util.h"
 #include "oris_http.h"
@@ -7,32 +10,38 @@
 static void http_request_done_cb(struct evhttp_request *req, void *ctx);
 static const char* oris_get_http_method_string(const enum evhttp_cmd_type method);
 
+
+/* taken from libevent https-client sample */
 static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 {
 	int status;
+	oris_http_target_t* target = (oris_http_target_t*) ctx;
 
 	if (req == NULL) {
-/* If req is NULL, it means an error occurred, but
-* sadly we are mostly left guessing what the error
-* might have been. We'll do our best... */
-int printed_err = 0;
-int errcode = EVUTIL_SOCKET_ERROR();
-fprintf(stderr, "some request failed - no idea which one though!\n");
-/* If the OpenSSL error queue was empty, maybe it was a
-* socket error; let's try printing that. */
-if (! printed_err)
-fprintf(stderr, "socket error = %s (%d)\n",
-evutil_socket_error_to_string(errcode),
-errcode);
-return;
-}
+		bool printed_err = false;
+		int errcode = EVUTIL_SOCKET_ERROR();
+		unsigned long oslerr;
+		char buffer[256];
+
+		while ((oslerr = bufferevent_get_openssl_error(target->bev))) {
+			ERR_error_string_n(oslerr, buffer, sizeof(buffer));
+			oris_log_f(LOG_ERR, "SSL error %s", buffer);
+			printed_err = true;
+		}
+
+		/* no ssl error, so maybe socket error */
+		if (!printed_err) {
+			oris_log_f(LOG_ERR, "socket error: %s (%d)", 
+				evutil_socket_error_to_string(errcode),	errcode);
+		}
+
+		return;
+	}
 
 	status = evhttp_request_get_response_code(req);
 	oris_log_f(status / 100 != 2 ? LOG_ERR : LOG_INFO, "http response %d %s", 
-			evhttp_request_get_response_code(req),
-			evhttp_request_get_response_code_line(req));
-	
-	ctx = ctx;
+		evhttp_request_get_response_code(req),
+		evhttp_request_get_response_code_line(req));
 }
 
 static const char* oris_get_http_method_string(const enum evhttp_cmd_type method)
