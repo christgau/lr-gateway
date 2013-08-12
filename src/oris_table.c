@@ -1,7 +1,15 @@
 #include <string.h>
+#include <errno.h>
+
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "oris_table.h"
 #include "oris_util.h"
+#include "oris_log.h"
+
+#define DUMP_DELIM ';'
 
 bool oris_table_add_row(oris_table_t* tbl, const char* s, char delim)
 {
@@ -201,6 +209,48 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	}
 }
 
+void oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
+{
+	int f, j, col;
+	size_t i;
+	FILE* fs;
+	oris_table_row_t row;
+	char* c;
+	
+	f = creat(fname, 0644);
+	if (f < 0) {
+		oris_log_f(LOG_ERR, "could not open file %s (%d)", fname, errno);
+		return;
+	}
+
+	fs = fdopen(f, "w");
+	fputs("[Definition]\n", fs);
+	for (i = 0; i < tables->count; i++) {
+		fprintf(fs, "%s=\n", tables->tables[i].name);
+	}
+
+	fputs("\n", fs);
+	for (i = 0; i < tables->count; i++) {
+		fprintf(fs, "[%s]\n", tables->tables[i].name);
+		for (j = 0; j < tables->tables[i].row_count; j++) {
+			row = tables->tables[i].rows[j];
+			col = 1;
+			c = row.buffer;
+			while (col < row.field_count) {
+				if (*c == '\0') {
+					col++;
+					fputc(DUMP_DELIM, fs);
+				} else {
+					fputc(*c, fs);
+				}
+				c++;
+			}
+		}
+		fputs("\n", fs);
+	}
+
+	fclose(fs);
+}
 
 /* misc/shortcut functions */
 const char* oris_tables_get_field_by_number(oris_table_list_t* list, 
