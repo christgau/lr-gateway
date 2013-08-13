@@ -20,6 +20,8 @@ static const int SOCKET_RECONNECT_TIMEOUT = 10; /* two seconds */
 static void oris_socket_connection_write(void* connection, const void* buf, size_t bufsize);
 static void oris_server_connection_do_accept(evutil_socket_t listener, short event, void *ctx); 
 static void oris_server_socket_event_cb(struct bufferevent *bev, short event, void *ctx);
+static void oris_connection_event_cb(struct bufferevent *bev, short events, void *arg);
+static void oris_create_client_socket(oris_socket_connection_t* connection);
 
 oris_socket_connection_t* oris_socket_connection_create(const char* name,
 		oris_protocol_t* protocol, struct evhttp_uri *uri,
@@ -60,11 +62,30 @@ static void oris_connection_read_cb(struct bufferevent *bev, void *ptr)
 {
 	oris_connection_t* connection = ptr;
 
-	oris_logs(LOG_DEBUG, "got data\n");
 	if (connection->protocol->read_cb) {
 		connection->protocol->read_cb(bev, ptr);
 
 	}
+}
+
+static void oris_create_client_socket(oris_socket_connection_t* connection)
+{
+	if (connection->bufev) {
+		bufferevent_free(connection->bufev);
+	}
+
+	connection->bufev = bufferevent_socket_new(
+			connection->libevent_info->base, -1, 
+			BEV_OPT_CLOSE_ON_FREE);
+
+	bufferevent_setcb(connection->bufev, oris_connection_read_cb, NULL, 
+			oris_connection_event_cb, connection);
+	bufferevent_enable(connection->bufev, EV_READ | EV_WRITE);
+	bufferevent_socket_connect_hostname(connection->bufev, 
+		connection->libevent_info->dns_base, AF_UNSPEC, 
+		evhttp_uri_get_host(connection->uri), 
+		evhttp_uri_get_port(connection->uri));
+
 }
 
 static void oris_connection_reconnect_timer_cb(evutil_socket_t fd, short event, void* arg)
@@ -74,14 +95,12 @@ static void oris_connection_reconnect_timer_cb(evutil_socket_t fd, short event, 
 	event_free(connection->reconnect_timeout_event);
 	connection->reconnect_timeout_event = NULL;
 
-	oris_log_f(LOG_INFO, "connection '%s': reconnect to %s:%d", connection->base.name, 
+	oris_log_f(LOG_INFO, "connection '%s': reconnecting to %s:%d", 
+			connection->base.name, 
 			evhttp_uri_get_host(connection->uri), 
 			evhttp_uri_get_port(connection->uri));
-		
-	bufferevent_socket_connect_hostname(connection->bufev, 
-		connection->libevent_info->dns_base, AF_UNSPEC, 
-		evhttp_uri_get_host(connection->uri), 
-		evhttp_uri_get_port(connection->uri));
+
+	oris_create_client_socket(connection);
 
 	fd = fd;
 	event = event;
@@ -93,8 +112,9 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 	struct timeval timeout;
 	oris_socket_connection_t* connection = arg;
 
+	oris_log_f(LOG_DEBUG, "event connection status %d", events);
 	if (events & BEV_EVENT_CONNECTED) {
-		oris_log_f(LOG_INFO, "connection '%s' connected %d", connection->base.name, events);	
+		oris_log_f(LOG_INFO, "connection '%s' connected", connection->base.name);	
 		if (connection->base.protocol->connected_cb) {
 			connection->base.protocol->connected_cb(connection->base.protocol);
 		}
@@ -125,7 +145,7 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 		timeout.tv_sec = SOCKET_RECONNECT_TIMEOUT;
 
 		if (event_add(connection->reconnect_timeout_event, &timeout)) {
-			oris_log_f(LOG_ERR, "connection '%s' could not add reconnect event",
+			oris_log_f(LOG_ERR, "connection '%s' could not add reconnect event. connection lost!",
 				connection->base.name);
 		}
 	} else {
@@ -145,15 +165,12 @@ bool oris_socket_connection_init(oris_socket_connection_t* connection, const cha
 	connection->base.destroy = oris_socket_connection_free;
 
 	connection->uri = uri;
+	connection->bufev = NULL;
 	connection->libevent_info = info;
 	connection->reconnect_timeout_event = NULL;
 
 	/* setup libevent stuff and start attempt to connect to server */
-	connection->bufev = bufferevent_socket_new(info->base, -1, BEV_OPT_CLOSE_ON_FREE);
-	bufferevent_setcb(connection->bufev, oris_connection_read_cb, NULL, oris_connection_event_cb, connection);
-	bufferevent_enable(connection->bufev, EV_READ | EV_WRITE);
-	bufferevent_socket_connect_hostname(connection->bufev, info->dns_base, AF_UNSPEC, 
-		evhttp_uri_get_host(connection->uri), evhttp_uri_get_port(connection->uri));
+	oris_create_client_socket(connection);
 
 	return true;
 }
