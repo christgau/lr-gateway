@@ -12,8 +12,48 @@
 #define LINE_DELIM_CR 0x0D
 #define LINE_DELIM_LF 0x0A
 
+#define ORIS_CTRL_PROMPT "oris> "
+
+typedef void (*oris_cmd_fn_t) (char* s, oris_application_info_t* info, 
+		struct evbuffer* out);
+
+typedef struct {
+	char* fn;
+	oris_cmd_fn_t f;
+} oris_ctrl_cmd_t;
+
+static void oris_builtin_cmd_terminate(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
+static void oris_builtin_cmd_pause_resume(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
+static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
+static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
+//static void oris_builtin_cmd_exit(char* s, oris_application_info_t* info,
+//	struct evbuffer* out);
+
+static oris_ctrl_cmd_t ctrl_commands[] = {
+	{ "dump", oris_builtin_cmd_dump },
+//	{ "exit", oris_builtin_cmd_exit },
+	{ "help", oris_builtin_cmd_help },
+	{ "pause", oris_builtin_cmd_pause_resume },
+	{ "resume", oris_builtin_cmd_pause_resume },
+	{ "terminate", oris_builtin_cmd_terminate }
+};
+
+
 static void process_command(const char* cmd, oris_application_info_t* info,
 	struct evbuffer* output);
+
+void oris_protocol_ctrl_connected_cb(struct oris_protocol* self)
+{
+	/* sorry, self is not a protocol here */
+	struct bufferevent* bev = (struct bufferevent*) self;
+	struct evbuffer* output = bufferevent_get_output(bev);
+
+	evbuffer_add_printf(output, "%s\n%s", ORIS_USER_AGENT, ORIS_CTRL_PROMPT);
+}
 
 void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 {
@@ -21,15 +61,20 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 	oris_ctrl_protocol_data_t* pdata = (oris_ctrl_protocol_data_t*) con->protocol->data;
 
 	struct evbuffer* input, *output; 
-	char* line;
+	char* line, *cmd;
 	size_t n;
 
 	input = bufferevent_get_input(bev);
 	output = bufferevent_get_output(bev);
 
-	while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_LF))) {
-		process_command(line, pdata->info, output);
-		evbuffer_add(output, "\r\n", 2);
+	while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_CRLF))) {
+		cmd = oris_ltrim(line);
+
+		if (strlen(cmd) > 0) {
+			process_command(cmd, pdata->info, output);
+			evbuffer_add_printf(output, "\n");
+		} 
+		evbuffer_add_printf(output, "%s", ORIS_CTRL_PROMPT);
 		free(line);
 	}
 
@@ -42,26 +87,61 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 static void process_command(const char* cmd, oris_application_info_t* info, 
 	struct evbuffer* output)
 {
-	output = output;
+	size_t i;
 
-	oris_log_f(LOG_INFO, "got command >%s<", cmd);
-	if (strcmp(cmd, "terminate") == 0 || strcmp(cmd, "exit") == 0) {
-		oris_log_f(LOG_INFO, "exiting by external command");
-		event_base_loopbreak(info->libevent_info.base);	
-	} else if (strcmp(cmd, "pause") == 0 && !info->paused) {
+	oris_log_f(LOG_DEBUG, "got command '%s'", cmd);
+	for (i = 0; i < sizeof(ctrl_commands) / sizeof(*ctrl_commands); i++) {
+		if (strstr(ctrl_commands[i].fn, cmd) == ctrl_commands[i].fn) {
+			ctrl_commands[i].f((char*) cmd, info, output);
+			return;
+		}
+	}
+	
+	oris_log_f(LOG_ERR, "unknown remote command '%s'", cmd);
+	evbuffer_add_printf(output, "unknown command %s", cmd);
+}
+
+/* implementation of builtin commands */
+
+static void oris_builtin_cmd_terminate(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	oris_log_f(LOG_INFO, "terminating external command (%s)", s);
+	evbuffer_add_printf(out, "terminating");
+	event_base_loopbreak(info->libevent_info.base);	
+}
+
+static void oris_builtin_cmd_pause_resume(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	if (strcmp(s, "pause") == 0) {
 		oris_log_f(LOG_INFO, "pausing activity on targets");
+		evbuffer_add_printf(out, "paused");
 		info->paused = true;
-	} else if (strcmp(cmd, "resume") == 0 && info->paused) {
+	} else if (strcmp(s, "resume") == 0) {
 		oris_log_f(LOG_INFO, "resuming activity on targets");
+		evbuffer_add_printf(out, "resumed");
 		info->paused = false;
-	} else if (strcmp(cmd, "produce today") == 0) {
-		oris_log_f(LOG_INFO, "generating comps for today");
-	} else if (strcmp(cmd, "produce tomorrow") == 0) {
-		oris_log_f(LOG_INFO, "generating comps for tomorrow");
-	} else if (strcmp(cmd, "dump") == 0) {
-		oris_tables_dump_to_file(&info->data_tables, info->dump_fn);
-		evbuffer_add_printf(output, "dump resides in %s", info->dump_fn);
-	} else {
-		oris_log_f(LOG_INFO, "unknown remote command '%s'", cmd);
-	} 
+	}
+}
+
+static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	size_t i;
+	for (i = 0; i < sizeof(ctrl_commands) / sizeof(*ctrl_commands); i++) {
+		evbuffer_add_printf(out, "%s: \n", ctrl_commands[i].fn);
+	}
+
+	s = s;
+	info = info;
+}
+
+static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	oris_tables_dump_to_file(&info->data_tables, info->dump_fn);
+	evbuffer_add_printf(out, "tables dumped to %s", info->dump_fn);
+
+	s = s;
 }

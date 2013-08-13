@@ -85,7 +85,6 @@ static void oris_create_client_socket(oris_socket_connection_t* connection)
 		connection->libevent_info->dns_base, AF_UNSPEC, 
 		evhttp_uri_get_host(connection->uri), 
 		evhttp_uri_get_port(connection->uri));
-
 }
 
 static void oris_connection_reconnect_timer_cb(evutil_socket_t fd, short event, void* arg)
@@ -299,7 +298,8 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 		bufferevent_setwatermark(bev, EV_READ, 0, MAX_LINE_SIZE);
 		bufferevent_enable(bev, EV_READ | EV_WRITE);
 		if (((oris_connection_t*) connection)->protocol->connected_cb) {
-			((oris_connection_t*) connection)->protocol->connected_cb(((oris_connection_t*) connection)->protocol);
+		/*	((oris_connection_t*) connection)->protocol->connected_cb(((oris_connection_t*) connection)->protocol);*/
+			((oris_connection_t*) connection)->protocol->connected_cb((void*) bev);
 		}
 	}
 
