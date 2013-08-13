@@ -55,6 +55,7 @@ oris_protocol_t* oris_get_protocol_from_scheme(const char* scheme, void *data)
 			retval = oris_simple_protocol_create(scheme, 
 				oris_protocol_ctrl_read_cb);
 			if (retval) {
+				retval->connected_cb = oris_protocol_ctrl_connected_cb;
 				retval->data = calloc(1, sizeof(oris_ctrl_protocol_data_t));
 				if (retval->data) {
 					((oris_ctrl_protocol_data_t*) retval->data)->info = data;
@@ -113,21 +114,3 @@ size_t oris_protocol_recv(struct evbuffer* input, char** buffer, size_t* buf_siz
 
 	return rlen;
 }
-
-oris_protocol_t* oris_protocol_clone(oris_protocol_t* src)
-{
-	oris_protocol_t* retval = oris_protocol_create();
-
-	if (retval) {
-		retval->name = strdup(src->name);
-		retval->data = src->data;
-		retval->destroy = src->destroy;
-		retval->read_cb = src->read_cb;
-		retval->connected_cb = src->connected_cb;
-		retval->disconnected_cb = src->disconnected_cb;
-	}
-	
-	return retval;
-}
-
-
