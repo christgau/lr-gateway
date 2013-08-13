@@ -26,4 +26,7 @@ bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size);
 
 bool oris_strtoint(const char* s, int* v);
 
+char* oris_ltrim(char* s);
+char* oris_rtrim(char* s);
+
 #endif /* __ORIS_UTIL_H */

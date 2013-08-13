@@ -49,3 +49,25 @@ bool oris_strtoint(const char* s, int* v)
 		return true; 
 	}
 }
+
+char* oris_ltrim(char* s)
+{
+	while (*s && isblank(*s)) {
+		s++;
+	}
+
+	return s;
+}
+
+
+char* oris_rtrim(char* s)
+{
+	char* p;
+	
+	for (p = s; *p; p++) ;
+	while (isblank(*p) && p != s) {
+		*p = 0;
+	}
+
+	return s;
+}
