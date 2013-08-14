@@ -12,7 +12,7 @@
 #define LINE_DELIM_CR 0x0D
 #define LINE_DELIM_LF 0x0A
 
-#define ORIS_CTRL_PROMPT "oris> "
+#define ORIS_CTRL_PROMPT "\x1b[1moris>\x1b[0m "
 
 typedef void (*oris_cmd_fn_t) (char* s, oris_application_info_t* info, 
 		struct evbuffer* out);
@@ -37,7 +37,7 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "dump", oris_builtin_cmd_dump },
-//	{ "exit", oris_builtin_cmd_exit },
+	{ "exit", NULL },
 	{ "help", oris_builtin_cmd_help },
 	{ "list", oris_builtin_cmd_list },
 	{ "pause", oris_builtin_cmd_pause_resume },
@@ -66,24 +66,36 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 	struct evbuffer* input, *output; 
 	char* line, *cmd;
 	size_t n;
+	bool close;
 
 	input = bufferevent_get_input(bev);
 	output = bufferevent_get_output(bev);
 
 	while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_CRLF))) {
 		cmd = oris_rtrim(oris_ltrim(line));
+		close = strcmp(cmd, "exit") == 0;
 
-		if (strlen(cmd) > 0) {
+		if (strlen(cmd) > 0 && !close) {
 			process_command(cmd, pdata->info, output);
 			evbuffer_add_printf(output, "\n");
 		} 
-		evbuffer_add_printf(output, "%s", ORIS_CTRL_PROMPT);
+
+		if (close) {
+			evbuffer_add_printf(output, "Bye!\n");
+		} else {
+			evbuffer_add_printf(output, "%s", ORIS_CTRL_PROMPT);
+		}
+
 		free(line);
 	}
 
 	if (evbuffer_get_length(input) > 1024) {
 		evbuffer_add_printf(output, "Sorry, line too long\r\n");
 		evbuffer_drain(input, evbuffer_get_length(input));
+	}
+
+	if (close) {
+		bufferevent_free(bev);
 	}
 }
 
@@ -94,7 +106,7 @@ static void process_command(const char* cmd, oris_application_info_t* info,
 
 	oris_log_f(LOG_DEBUG, "got command '%s'", cmd);
 	for (i = 0; i < sizeof(ctrl_commands) / sizeof(*ctrl_commands); i++) {
-		if (strstr(cmd, ctrl_commands[i].fn) == cmd) {
+		if (strstr(cmd, ctrl_commands[i].fn) == cmd && ctrl_commands[i].f) {
 			ctrl_commands[i].f((char*) cmd, info, output);
 			return;
 		}
@@ -202,7 +214,7 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	if (!object) {
 		evbuffer_add_printf(out, "don't know what to dump");
 	} else if (strcmp(object, "tables") == 0) {
-		evbuffer_add_printf(out, "%d tables present", info->data_tables.count);
+		evbuffer_add_printf(out, "%d tables present", (int) info->data_tables.count);
 		for (i = 0; i < info->data_tables.count; i++) {
 			evbuffer_add_printf(out, "\n%s", info->data_tables.tables[i].name);
 		}
