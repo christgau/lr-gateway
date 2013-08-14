@@ -30,6 +30,8 @@ static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 //static void oris_builtin_cmd_exit(char* s, oris_application_info_t* info,
 //	struct evbuffer* out);
 
@@ -37,6 +39,7 @@ static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "dump", oris_builtin_cmd_dump },
 //	{ "exit", oris_builtin_cmd_exit },
 	{ "help", oris_builtin_cmd_help },
+	{ "list", oris_builtin_cmd_list },
 	{ "pause", oris_builtin_cmd_pause_resume },
 	{ "resume", oris_builtin_cmd_pause_resume },
 	{ "terminate", oris_builtin_cmd_terminate }
@@ -68,7 +71,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 	output = bufferevent_get_output(bev);
 
 	while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_CRLF))) {
-		cmd = oris_ltrim(line);
+		cmd = oris_rtrim(oris_ltrim(line));
 
 		if (strlen(cmd) > 0) {
 			process_command(cmd, pdata->info, output);
@@ -91,7 +94,7 @@ static void process_command(const char* cmd, oris_application_info_t* info,
 
 	oris_log_f(LOG_DEBUG, "got command '%s'", cmd);
 	for (i = 0; i < sizeof(ctrl_commands) / sizeof(*ctrl_commands); i++) {
-		if (strstr(ctrl_commands[i].fn, cmd) == ctrl_commands[i].fn) {
+		if (strstr(cmd, ctrl_commands[i].fn) == cmd) {
 			ctrl_commands[i].f((char*) cmd, info, output);
 			return;
 		}
@@ -102,6 +105,39 @@ static void process_command(const char* cmd, oris_application_info_t* info,
 }
 
 /* implementation of builtin commands */
+
+static void word_end(char** s)
+{
+	char* str;
+
+	for (str = *s; *str && !isblank(*str); str++);
+	
+	*s = *str ? str : NULL;
+}
+
+static char* next_word(char** s)
+{
+	char* str, *retval = NULL;
+
+	if (*s == NULL) {
+		return NULL;
+	}
+
+	for (str = *s; *str && isblank(*str);  str++) ; /* skip white space */
+
+	if (*str) {
+		retval = str;
+		for ( ; *str && !isblank(*str); str++) ; /* skip word letters */
+		if (*str) {
+			*str++ = 0;
+			if (*str) {
+				*s = NULL;
+			}
+		}
+	}
+
+	return retval;
+}
 
 static void oris_builtin_cmd_terminate(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
@@ -144,4 +180,25 @@ static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	evbuffer_add_printf(out, "tables dumped to %s", info->dump_fn);
 
 	s = s;
+}
+
+static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	char* object;
+	size_t i; 
+
+	word_end(&s);
+	object = next_word(&s);
+
+	if (!object) {
+		evbuffer_add_printf(out, "don't know what to dump");
+	} else if (strcmp(object, "tables") == 0) {
+		evbuffer_add_printf(out, "%d tables present", info->data_tables.count);
+		for (i = 0; i < info->data_tables.count; i++) {
+			evbuffer_add_printf(out, "\n%s", info->data_tables.tables[i].name);
+		}
+	} else {
+		evbuffer_add_printf(out, "unknown objects to list: '%s'", object);
+	}
 }
