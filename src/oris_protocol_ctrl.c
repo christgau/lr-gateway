@@ -151,13 +151,21 @@ static void oris_builtin_cmd_pause_resume(char* s, oris_application_info_t* info
 	struct evbuffer* out)
 {
 	if (strcmp(s, "pause") == 0) {
-		oris_log_f(LOG_INFO, "pausing activity on targets");
-		evbuffer_add_printf(out, "paused");
-		info->paused = true;
+		if (!info->paused) {
+			oris_log_f(LOG_INFO, "pausing activity on targets");
+			evbuffer_add_printf(out, "paused");
+			info->paused = true;
+		} else {
+			evbuffer_add_printf(out, "already paused");
+		}
 	} else if (strcmp(s, "resume") == 0) {
-		oris_log_f(LOG_INFO, "resuming activity on targets");
-		evbuffer_add_printf(out, "resumed");
-		info->paused = false;
+		if (info->paused) {
+			oris_log_f(LOG_INFO, "resuming activity on targets");
+			evbuffer_add_printf(out, "resumed");
+			info->paused = false;
+		} else {
+			evbuffer_add_printf(out, "not paused");
+		}
 	}
 }
 
