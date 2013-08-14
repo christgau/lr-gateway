@@ -15,8 +15,6 @@
 
 int oris_main_default(oris_application_info_t *info)
 {
-	info->paused = true;
-
 	if (!oris_app_info_init(info)) {
 		oris_log_f(LOG_CRIT, "could not init application (see above). Exiting");
 	}
