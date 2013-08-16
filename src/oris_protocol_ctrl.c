@@ -37,13 +37,13 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 //	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
-	{ "dump", "dump all tables to file (optional argument)" oris_builtin_cmd_dump },
+	{ "dump", "dump all tables to file (optional argument)", oris_builtin_cmd_dump },
 	{ "exit", "terminate connection", NULL },
 	{ "help", "show this help", oris_builtin_cmd_help },
 	{ "list", "list objects: tables", oris_builtin_cmd_list },
 	{ "pause", "disable automation actions", oris_builtin_cmd_pause_resume },
-	{ "resume", "re-enable automation actions" oris_builtin_cmd_pause_resume },
-	{ "terminate", "terminate the gateway" oris_builtin_cmd_terminate }
+	{ "resume", "re-enable automation actions", oris_builtin_cmd_pause_resume },
+	{ "terminate", "terminate the gateway", oris_builtin_cmd_terminate }
 };
 
 
@@ -74,7 +74,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 
 	while ((line = evbuffer_readln(input, &n, EVBUFFER_EOL_CRLF))) {
 		cmd = oris_rtrim(oris_ltrim(line));
-		close = strcmp(cmd, "exit") == 0;
+		close = strcmp(cmd, "exit") == 0 || strcmp(cmd, "quit") == 0;
 
 		if (strlen(cmd) > 0 && !close) {
 			process_command(cmd, pdata->info, output);
@@ -199,10 +199,13 @@ static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
 	word_end(&s);
-	fn = next_word(&s);
+	char* fn = next_word(&s);
 
-	oris_tables_dump_to_file(&info->data_tables, fn ? fn : info->dump_fn);
-	evbuffer_add_printf(out, "tables dumped to %s", fn ? fn : info->dump_fn);
+	if (oris_tables_dump_to_file(&info->data_tables, fn ? fn : info->dump_fn)) {
+		evbuffer_add_printf(out, "tables dumped to %s", fn ? fn : info->dump_fn);
+	} else {
+		evbuffer_add_printf(out, "count not dump to %s", fn ? fn : info->dump_fn);
+	}
 }
 
 static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
@@ -219,7 +222,15 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	} else if (strcmp(object, "tables") == 0) {
 		evbuffer_add_printf(out, "%d tables present", (int) info->data_tables.count);
 		for (i = 0; i < info->data_tables.count; i++) {
-			evbuffer_add_printf(out, "\n%s", info->data_tables.tables[i].name);
+			evbuffer_add_printf(out, "\n\t%s", info->data_tables.tables[i].name);
+		}
+	} else if (strcmp(object, "targets") == 0) {
+		evbuffer_add_printf(out, "%d http targets defined", (int) info->targets.count);
+		for (i = 0; i < (size_t) info->targets.count; i++) {
+			evbuffer_add_printf(out, "\n\t%s -> %s://%s/%s", info->targets.items[i].name, 
+					evhttp_uri_get_scheme(info->targets.items[i].uri),
+					evhttp_uri_get_host(info->targets.items[i].uri),
+					evhttp_uri_get_path(info->targets.items[i].uri));
 		}
 	} else {
 		evbuffer_add_printf(out, "unknown objects to list: '%s'", object);
