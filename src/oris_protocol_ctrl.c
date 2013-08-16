@@ -226,7 +226,8 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	} else if (strcmp(object, "tables") == 0) {
 		evbuffer_add_printf(out, "%d tables present", (int) info->data_tables.count);
 		for (i = 0; i < info->data_tables.count; i++) {
-			evbuffer_add_printf(out, "\r\n\t%s", info->data_tables.tables[i].name);
+			evbuffer_add_printf(out, "\r\n\t%s (%d)", info->data_tables.tables[i].name,
+					info->data_tables.tables[i].row_count);
 		}
 	} else if (strcmp(object, "targets") == 0) {
 		evbuffer_add_printf(out, "%d http targets defined", (int) info->targets.count);
