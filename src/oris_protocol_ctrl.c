@@ -33,6 +33,8 @@ static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 //static void oris_builtin_cmd_exit(char* s, oris_application_info_t* info,
 //	struct evbuffer* out);
 
@@ -40,9 +42,10 @@ static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "dump", "dump all tables to file (optional argument)", oris_builtin_cmd_dump },
 	{ "exit", "terminate connection", NULL },
 	{ "help", "show this help", oris_builtin_cmd_help },
-	{ "list", "list objects: tables", oris_builtin_cmd_list },
+	{ "list", "list objects: tables, targets", oris_builtin_cmd_list },
 	{ "pause", "disable automation actions", oris_builtin_cmd_pause_resume },
 	{ "resume", "re-enable automation actions", oris_builtin_cmd_pause_resume },
+	{ "show", "show content of table (name is argument)", oris_builtin_cmd_show },
 	{ "terminate", "terminate the gateway", oris_builtin_cmd_terminate }
 };
 
@@ -204,7 +207,7 @@ static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	if (oris_tables_dump_to_file(&info->data_tables, fn ? fn : info->dump_fn)) {
 		evbuffer_add_printf(out, "tables dumped to %s", fn ? fn : info->dump_fn);
 	} else {
-		evbuffer_add_printf(out, "count not dump to %s", fn ? fn : info->dump_fn);
+		evbuffer_add_printf(out, "could not dump to %s", fn ? fn : info->dump_fn);
 	}
 }
 
@@ -235,4 +238,33 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	} else {
 		evbuffer_add_printf(out, "unknown objects to list: '%s'", object);
 	}
+}
+
+static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	char* tbl_name;
+	size_t i; 
+	oris_table_t* tbl;
+
+	word_end(&s);
+	tbl_name = next_word(&s);
+
+	if (!tbl_name) {
+		evbuffer_add_printf(out, "missing table name");
+		return;
+	}
+
+	tbl = oris_get_table(&info->data_tables, tbl_name); 
+	if (!tbl) {
+		evbuffer_add_printf(out, "unknown table '%s'", tbl_name);
+		return;
+	}
+
+	if (tbl->row_count == 0) {
+		evbuffer_add_printf(out, "table '%s' is empty", tbl->name);
+		return;
+	}
+
+	evbuffer_add_printf(out, "table '%s' has %d records", tbl_name, tbl->row_count);
 }

@@ -209,7 +209,7 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	}
 }
 
-void oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
+bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 {
 	int f, j, col;
 	size_t i;
@@ -220,7 +220,7 @@ void oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 	f = creat(fname, 0644);
 	if (f < 0) {
 		oris_log_f(LOG_ERR, "could not open file %s (%d)", fname, errno);
-		return;
+		return false;
 	}
 
 	fs = fdopen(f, "w");
@@ -250,6 +250,8 @@ void oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 	}
 
 	fclose(fs);
+
+	return true;
 }
 
 /* misc/shortcut functions */
