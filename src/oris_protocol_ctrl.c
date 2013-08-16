@@ -19,6 +19,7 @@ typedef void (*oris_cmd_fn_t) (char* s, oris_application_info_t* info,
 
 typedef struct {
 	char* fn;
+	char* help;
 	oris_cmd_fn_t f;
 } oris_ctrl_cmd_t;
 
@@ -36,13 +37,13 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 //	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
-	{ "dump", oris_builtin_cmd_dump },
-	{ "exit", NULL },
-	{ "help", oris_builtin_cmd_help },
-	{ "list", oris_builtin_cmd_list },
-	{ "pause", oris_builtin_cmd_pause_resume },
-	{ "resume", oris_builtin_cmd_pause_resume },
-	{ "terminate", oris_builtin_cmd_terminate }
+	{ "dump", "dump all tables to file (optional argument)" oris_builtin_cmd_dump },
+	{ "exit", "terminate connection", NULL },
+	{ "help", "show this help", oris_builtin_cmd_help },
+	{ "list", "list objects: tables", oris_builtin_cmd_list },
+	{ "pause", "disable automation actions", oris_builtin_cmd_pause_resume },
+	{ "resume", "re-enable automation actions" oris_builtin_cmd_pause_resume },
+	{ "terminate", "terminate the gateway" oris_builtin_cmd_terminate }
 };
 
 
