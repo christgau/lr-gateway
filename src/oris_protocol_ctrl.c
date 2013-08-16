@@ -35,10 +35,13 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 //static void oris_builtin_cmd_exit(char* s, oris_application_info_t* info,
 //	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
+	{ "clear", "clears the given data table (argument)", oris_builtin_cmd_clear },
 	{ "dump", "dump all tables to file (optional argument)", oris_builtin_cmd_dump },
 	{ "exit", "terminate connection", NULL },
 	{ "help", "show this help", oris_builtin_cmd_help },
@@ -267,4 +270,27 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	}
 
 	evbuffer_add_printf(out, "table '%s' has %d records", tbl_name, tbl->row_count);
+}
+
+static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	char* tbl_name;
+	oris_table_t* tbl;
+
+	word_end(&s);
+	tbl_name = next_word(&s);
+
+	if (!tbl_name) {
+		evbuffer_add_printf(out, "missing table name");
+		return;
+	}
+
+	tbl = oris_get_table(&info->data_tables, tbl_name); 
+	if (!tbl) {
+		evbuffer_add_printf(out, "unknown table '%s'", tbl_name);
+		return;
+	}
+
+	oris_table_clear(tbl);
 }
