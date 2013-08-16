@@ -62,7 +62,7 @@ void oris_protocol_ctrl_connected_cb(struct oris_protocol* self)
 	struct bufferevent* bev = (struct bufferevent*) self;
 	struct evbuffer* output = bufferevent_get_output(bev);
 
-	evbuffer_add_printf(output, "%s\n%s", ORIS_USER_AGENT, ORIS_CTRL_PROMPT);
+	evbuffer_add_printf(output, "%s\r\n%s", ORIS_USER_AGENT, ORIS_CTRL_PROMPT);
 }
 
 void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
@@ -84,7 +84,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 
 		if (strlen(cmd) > 0 && !close) {
 			process_command(cmd, pdata->info, output);
-			evbuffer_add_printf(output, "\n");
+			evbuffer_add_printf(output, "\r\n");
 		} 
 
 		if (close) {
@@ -193,7 +193,7 @@ static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
 {
 	size_t i;
 	for (i = 0; i < sizeof(ctrl_commands) / sizeof(*ctrl_commands); i++) {
-		evbuffer_add_printf(out, "%s: %s\n", ctrl_commands[i].fn, 
+		evbuffer_add_printf(out, "%s: %s\r\n", ctrl_commands[i].fn, 
 				ctrl_commands[i].help);
 	}
 
@@ -228,12 +228,12 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	} else if (strcmp(object, "tables") == 0) {
 		evbuffer_add_printf(out, "%d tables present", (int) info->data_tables.count);
 		for (i = 0; i < info->data_tables.count; i++) {
-			evbuffer_add_printf(out, "\n\t%s", info->data_tables.tables[i].name);
+			evbuffer_add_printf(out, "\r\n\t%s", info->data_tables.tables[i].name);
 		}
 	} else if (strcmp(object, "targets") == 0) {
 		evbuffer_add_printf(out, "%d http targets defined", (int) info->targets.count);
 		for (i = 0; i < (size_t) info->targets.count; i++) {
-			evbuffer_add_printf(out, "\n\t%s -> %s://%s/%s", info->targets.items[i].name, 
+			evbuffer_add_printf(out, "\r\n\t%s -> %s://%s/%s", info->targets.items[i].name, 
 					evhttp_uri_get_scheme(info->targets.items[i].uri),
 					evhttp_uri_get_host(info->targets.items[i].uri),
 					evhttp_uri_get_path(info->targets.items[i].uri));
