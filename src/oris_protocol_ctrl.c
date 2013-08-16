@@ -187,7 +187,8 @@ static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
 {
 	size_t i;
 	for (i = 0; i < sizeof(ctrl_commands) / sizeof(*ctrl_commands); i++) {
-		evbuffer_add_printf(out, "%s: \n", ctrl_commands[i].fn);
+		evbuffer_add_printf(out, "%s: %s\n", ctrl_commands[i].fn, 
+				ctrl_commands[i].help);
 	}
 
 	s = s;
