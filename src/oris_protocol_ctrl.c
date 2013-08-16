@@ -37,8 +37,6 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
-//static void oris_builtin_cmd_exit(char* s, oris_application_info_t* info,
-//	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "clear", "clears the given data table (argument)", oris_builtin_cmd_clear },
