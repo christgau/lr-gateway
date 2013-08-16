@@ -197,10 +197,11 @@ static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
 static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
-	oris_tables_dump_to_file(&info->data_tables, info->dump_fn);
-	evbuffer_add_printf(out, "tables dumped to %s", info->dump_fn);
+	word_end(&s);
+	fn = next_word(&s);
 
-	s = s;
+	oris_tables_dump_to_file(&info->data_tables, fn ? fn : info->dump_fn);
+	evbuffer_add_printf(out, "tables dumped to %s", fn ? fn : info->dump_fn);
 }
 
 static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
