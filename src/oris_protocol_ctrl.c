@@ -264,7 +264,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 		return;
 	}
 
-	tbl = oris_get_table(&info->data_tables, tbl_name); 
+	tbl = oris_get_table(&info->data_tables, oris_upper_str(tbl_name)); 
 	if (!tbl) {
 		evbuffer_add_printf(out, "unknown table '%s'", tbl_name);
 		return;
@@ -295,7 +295,7 @@ static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
 		return;
 	}
 
-	tbl = oris_get_table(&info->data_tables, tbl_name); 
+	tbl = oris_get_table(&info->data_tables, oris_upper_str(tbl_name));
 	if (!tbl) {
 		evbuffer_add_printf(out, "unknown table '%s'", tbl_name);
 		return;
