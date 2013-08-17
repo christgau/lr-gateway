@@ -89,7 +89,9 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 
 		if (strlen(cmd) > 0 && !close) {
 			process_command(cmd, pdata->info, output);
-			evbuffer_add_printf(output, "\r\n");
+			if (evbuffer_get_length(output) > 0) {
+				evbuffer_add_printf(output, "\r\n");
+			}
 		} 
 
 		if (close) {
@@ -156,6 +158,8 @@ static char* next_word(char** s)
 			*str++ = 0;
 			if (*str == 0) {
 				*s = NULL;
+			} else {
+				*s = str;
 			}
 		}
 	}
