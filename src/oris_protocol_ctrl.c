@@ -4,6 +4,7 @@
 #include <limits.h>
 #include <event2/bufferevent.h>
 
+#include "oris_automation.h"
 #include "oris_protocol_ctrl.h"
 #include "oris_connection.h"
 #include "oris_log.h"
@@ -37,6 +38,8 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "clear", "clears the given data table (argument)", oris_builtin_cmd_clear },
@@ -45,6 +48,7 @@ static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "help", "show this help", oris_builtin_cmd_help },
 	{ "list", "list objects: tables, targets", oris_builtin_cmd_list },
 	{ "pause", "disable automation actions", oris_builtin_cmd_pause_resume },
+	{ "request", "issue request to data feed provider(s)", oris_builtin_cmd_request },
 	{ "resume", "re-enable automation actions", oris_builtin_cmd_pause_resume },
 	{ "show", "show content of table (name is argument)", oris_builtin_cmd_show },
 	{ "terminate", "terminate the gateway", oris_builtin_cmd_terminate }
@@ -292,4 +296,20 @@ static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
 	}
 
 	oris_table_clear(tbl);
+}
+
+static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	char* request;
+
+	word_end(&s);
+	request = next_word(&s);
+
+	if (request) {
+		oris_log_f(LOG_DEBUG, "sending requesting \%s", request);
+		oris_connections_send(&info->connections, "data", request, strlen(request));
+	} else {
+		evbuffer_add_printf(out, "now request given");
+	}
 }
