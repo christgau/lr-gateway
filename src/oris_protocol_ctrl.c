@@ -40,8 +40,11 @@ static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
+	{ "add", "add a row of records to a table (usage: add table row)", oris_builtin_cmd_add },
 	{ "clear", "clears the given data table (argument)", oris_builtin_cmd_clear },
 	{ "dump", "dump all tables to file (optional argument)", oris_builtin_cmd_dump },
 	{ "exit", "terminate connection", NULL },
@@ -151,7 +154,7 @@ static char* next_word(char** s)
 		for ( ; *str && !isblank(*str); str++) ; /* skip word letters */
 		if (*str) {
 			*str++ = 0;
-			if (*str) {
+			if (*str == 0) {
 				*s = NULL;
 			}
 		}
@@ -250,7 +253,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
 	char* tbl_name;
-	size_t i; 
+	int i; 
 	oris_table_t* tbl;
 
 	word_end(&s);
@@ -272,7 +275,10 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 		return;
 	}
 
-	evbuffer_add_printf(out, "table '%s' has %d records", tbl_name, tbl->row_count);
+	evbuffer_add_printf(out, "table '%s' has %d records and %d fields", 
+			tbl_name, tbl->row_count, tbl->field_count);
+	for (i = 0; i < tbl->row_count; i++) {
+	}
 }
 
 static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
@@ -312,4 +318,33 @@ static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
 	} else {
 		evbuffer_add_printf(out, "now request given");
 	}
+}
+
+static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	char *tbl_name, *row;
+	oris_table_t* tbl;
+
+	word_end(&s);
+	tbl_name = next_word(&s);
+	row = next_word(&s);
+
+	if (!tbl_name) {
+		evbuffer_add_printf(out, "missing table name");
+		return;
+	} 
+
+	if (!row) {
+		evbuffer_add_printf(out, "missing/empty row for table %s (not added)", tbl_name);
+		return;
+	}
+
+	tbl = oris_get_or_create_table(&info->data_tables, oris_upper_str(tbl_name), true); 
+	if (!tbl) {
+		evbuffer_add_printf(out, "could not allocate new table %s", tbl_name);
+		return;
+	}
+	
+	oris_table_add_row(tbl, row, '|');
 }
