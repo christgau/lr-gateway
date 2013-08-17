@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <errno.h>
+#include <ctype.h>
 
 #include "oris_util.h"
 
@@ -70,4 +71,16 @@ char* oris_rtrim(char* s)
 	}
 
 	return s;
+}
+
+char* oris_upper_str(char* s)
+{
+	char* r = s;
+
+	while (s && *s) {
+		*s = toupper(*s);
+		s++;
+	}
+
+	return r;
 }
