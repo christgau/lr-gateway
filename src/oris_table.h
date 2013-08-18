@@ -43,6 +43,8 @@ void oris_table_init(oris_table_t* tbl);
 void oris_table_clear(oris_table_t* tbl);
 void oris_table_finalize(oris_table_t* tbl);
 const char* oris_table_get_field(oris_table_t* tbl, const char* field);
+const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index);
+int* oris_table_get_field_widths(oris_table_t* tbl);
 
 
 /* table list functions */

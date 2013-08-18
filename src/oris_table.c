@@ -107,7 +107,7 @@ static int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 	return -1;
 }
 
-static const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index)
+const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index)
 {
 	oris_table_row_t* row; 
 	char* retval;
@@ -149,6 +149,29 @@ const char* oris_table_get_field(oris_table_t* tbl, const char* field)
     return oris_table_get_field_by_index(tbl, index);
 }
 
+int* oris_table_get_field_widths(oris_table_t* tbl)
+{
+	int* retval = calloc(tbl->field_count, sizeof(*retval));
+	int i, j, l;
+	char* buf;
+
+	if (!retval) {
+		return retval;
+	}
+
+	for (i = 0; i < tbl->row_count; i++) {
+		buf = tbl->rows[i].buffer;
+		for (j = 0; j < tbl->rows[i].field_count; j++) {
+			l = strlen(buf);
+			if (l > retval[j]) {
+				retval[j] = l;
+			}
+			buf += l + 1;
+		}
+	}
+
+	return retval;
+}
 
 /* table list functions */
 void oris_tables_init(oris_table_list_t* list)
