@@ -343,17 +343,21 @@ static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
 static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
-	char *tbl_name, *row;
+	char *tbl_name, *row = NULL;
 	oris_table_t* tbl;
 
 	word_end(&s);
 	tbl_name = next_word(&s);
-	row = next_word(&s);
 
 	if (!tbl_name) {
 		evbuffer_add_printf(out, "missing table name");
 		return;
 	} 
+
+	if (s) {
+		for (; *s && isblank(*s); s++) ; /* skip white space */
+		row = s;
+	}
 
 	if (!row) {
 		evbuffer_add_printf(out, "missing/empty row for table %s (not added)", tbl_name);
