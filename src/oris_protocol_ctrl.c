@@ -42,6 +42,8 @@ static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "add", "add a row of records to a table (usage: add table row)", oris_builtin_cmd_add },
@@ -54,7 +56,8 @@ static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "request", "issue request to data feed provider(s)", oris_builtin_cmd_request },
 	{ "resume", "re-enable automation actions", oris_builtin_cmd_pause_resume },
 	{ "show", "show content of table (name is argument)", oris_builtin_cmd_show },
-	{ "terminate", "terminate the gateway", oris_builtin_cmd_terminate }
+	{ "terminate", "terminate the gateway", oris_builtin_cmd_terminate },
+	{ "trigger", "trigger actions (table, command)", oris_builtin_cmd_trigger }
 };
 
 
@@ -371,4 +374,36 @@ static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
 	}
 	
 	oris_table_add_row(tbl, row, '|');
+}
+
+static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	char* object;
+	oris_automation_event_t ev;
+
+	word_end(&s);
+	object = next_word(&s);
+	ev.name = next_word(&s);
+
+	if (!object) {
+		evbuffer_add_printf(out, "missing object (table or command");
+		return;
+	}
+
+	if (!ev.name) {
+		evbuffer_add_printf(out, "missing object name");
+		return;
+	}
+
+	if (strcasecmp(object, "table") == 0) {
+		ev.type = EVT_TABLE;
+	} else if (strcasecmp(object, "command") == 0) {
+		ev.type = EVT_COMMAND;
+	} else {
+		evbuffer_add_printf(out, "invalid trigger object '%s'", object);
+		return;
+	}
+
+	oris_automation_trigger(&ev, info);
 }
