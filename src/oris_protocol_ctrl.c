@@ -256,21 +256,21 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
-	char* tbl_name;
-	int i; 
+	char* str;
+	int row, i, j, *field_widths; 
 	oris_table_t* tbl;
 
 	word_end(&s);
-	tbl_name = next_word(&s);
+	str = next_word(&s);
 
-	if (!tbl_name) {
+	if (!str) {
 		evbuffer_add_printf(out, "missing table name");
 		return;
 	}
 
-	tbl = oris_get_table(&info->data_tables, oris_upper_str(tbl_name)); 
+	tbl = oris_get_table(&info->data_tables, oris_upper_str(str)); 
 	if (!tbl) {
-		evbuffer_add_printf(out, "unknown table '%s'", tbl_name);
+		evbuffer_add_printf(out, "unknown table '%s'", str);
 		return;
 	}
 
@@ -280,9 +280,25 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	}
 
 	evbuffer_add_printf(out, "table '%s' has %d records and %d fields", 
-			tbl_name, tbl->row_count, tbl->field_count);
-	for (i = 0; i < tbl->row_count; i++) {
+			str, tbl->row_count, tbl->field_count);
+
+	field_widths = oris_table_get_field_widths(tbl);
+	row = tbl->current_row;
+	for (tbl->current_row = 0; tbl->current_row < tbl->row_count; tbl->current_row++) {
+		evbuffer_add_printf(out, "\r\n");
+		for (i = 1; i <= tbl->rows[tbl->current_row].field_count; i++) {
+			if (i > 1) {
+				for (j = strlen(str); j < field_widths[i - 2]; j++) {
+					evbuffer_add(out, " ", 1);
+				}
+				evbuffer_add(out, " | ", 3);
+			}
+			str = (char*) oris_table_get_field_by_index(tbl, i);
+			evbuffer_add_printf(out, "%s", str);
+
+		}
 	}
+	tbl->current_row = row;
 }
 
 static void oris_builtin_cmd_clear(char* s, oris_application_info_t* info,
