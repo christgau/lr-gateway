@@ -78,7 +78,7 @@ char* oris_upper_str(char* s)
 	char* r = s;
 
 	while (s && *s) {
-		*s = toupper(*s);
+		*s = (char) toupper(*s);
 		s++;
 	}
 
