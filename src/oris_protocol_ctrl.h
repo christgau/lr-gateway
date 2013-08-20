@@ -3,7 +3,7 @@
 
 #include <event2/bufferevent.h>
 
-#include "oris_util.h"
+#include "oris_app_info.h"
 #include "oris_protocol.h"
 
 typedef struct oris_ctrl_protocol_data {
