@@ -1,19 +1,25 @@
 #include <stdlib.h>
-#include <string.h>
+
+/* important include order: antlrdefs includes socket stuff! */
+#include "oris_libevent.h"
 #include <antlr3encodings.h>
 #include <antlr3defs.h>
-
-#include "oris_interpret_tools.h"
-#include "oris_util.h"
-#include "oris_table.h"
-#include "configParser.h"
-#include "configTree.h"
+#include <locale.h>
 
 #ifdef __GNUC__
-#include <locale.h>
 #include <strings.h>
-#define stricmp strcasecmp
 #endif
+
+#ifdef WIN32
+#include <stdio.h>
+#define snprintf _snprintf
+#endif
+
+#include "oris_util.h"
+#include "oris_log.h"
+#include "oris_interpret_tools.h"
+#include "configParser.h"
+#include "configTree.h"
 
 mem_pool_t* oris_expr_mem_pool = NULL;
 
@@ -60,7 +66,7 @@ bool oris_interpreter_init(oris_table_list_t* tbls)
 	oris_expr_mem_pool = create_mem_pool(sizeof(oris_parse_expr_t));
 	data_tbls = tbls;
 
-	return (oris_expr_mem_pool);
+	return oris_expr_mem_pool != NULL;
 }
 
 void oris_interpreter_finalize(void)
@@ -304,7 +310,7 @@ static oris_builtin_func_t* get_builtin_fn_by_name(const char* name)
 	size_t i;
 
 	for (i = 0; i < sizeof(oris_builtin_funcs) / sizeof(*oris_builtin_funcs); i++) {
-		if (stricmp(oris_builtin_funcs[i].name, name) == 0) {
+		if (strcasecmp(oris_builtin_funcs[i].name, name) == 0) {
 			return &oris_builtin_funcs[i];
 		}
 	}
@@ -410,7 +416,7 @@ static oris_parse_expr_t* oris_built_in_length(pANTLR3_LIST args)
 	oris_parse_expr_t* arg = args->get(args, 1);
 	oris_expr_cast_to_str(arg);
 
-	return oris_alloc_int_value(mbstowcs(NULL, (char*) arg->value.as_string->chars, 0));
+	return oris_alloc_int_value((int) mbstowcs(NULL, (char*) arg->value.as_string->chars, 0));
 }
 
 static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args)
