@@ -8,6 +8,7 @@
 #include "oris_interpret_tools.h"
 
 #include "grammars/configTree.h"
+#include <antlr3basetree.h>
 
 static char* oris_parse_request_tree(const pANTLR3_BASE_TREE parse_tree);
 static char* oris_get_parsed_request(const char *name);
@@ -75,7 +76,7 @@ void oris_automation_request_action(oris_application_info_t* info,
 	char* r = oris_get_parsed_request(request_name);
 
 	if (r) {
-		oris_log_f(LOG_DEBUG, "sending requesting \%s\n", r);
+		oris_log_f(LOG_DEBUG, "sending requesting %s\n", r);
 		oris_connections_send(&info->connections, "data", r, strlen(r));
 		free(r);
 	}

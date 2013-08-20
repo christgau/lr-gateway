@@ -208,7 +208,7 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			target->connection = evhttp_connection_base_bufferevent_new(
 				config->libevent_info.base, config->libevent_info.dns_base, 
 				target->bev, evhttp_uri_get_host(evuri),
-				evhttp_uri_get_port(evuri));
+				(unsigned short) evhttp_uri_get_port(evuri));
 
 			config->targets.count++;
 		}
@@ -250,14 +250,14 @@ void oris_create_connection(oris_application_info_t* info, const char* name, ori
 	if (uri) {
 		oris_connection_t* c = oris_create_connection_from_uri(uri, name, (void*) info);
 		if (c) {
-			oris_log_f(LOG_DEBUG, "new connection \%s -> \%s", name, v_str);
+			oris_log_f(LOG_DEBUG, "new connection %s -> %s", name, v_str);
 			oris_connections_add(&info->connections, c);
 			/* uri is freed by connection */
 		} else {
 			evhttp_uri_free(uri);
 		}
 	} else {
-		oris_log_f(LOG_ERR, "invalid uri for connection \%s: \%s", name, v_str);
+		oris_log_f(LOG_ERR, "invalid uri for connection %s: %s", name, v_str);
 	}
 
 	free(v_str);
