@@ -1,7 +1,5 @@
 *.tokens
-configurationLexer.*
-configurationParser.*
-expr_evalLexer.*
-expr_evalParser.*
-expr_eval.*
+configLexer.*
+configParser.*
+configTree.[ch]
 gtest
