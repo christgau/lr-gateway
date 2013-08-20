@@ -1,10 +1,13 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
 
-
-#ifdef _WIN32
+#ifdef WIN32
 #include <io.h>
 #endif
 #include <fcntl.h>
@@ -240,27 +243,26 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 
 bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 {
-	int f, j, col;
+	int j, col;
 	size_t i;
-	FILE* fs;
+	FILE* f;
 	oris_table_row_t row;
 	char* c;
 	
-	f = open(fname, O_CREAT | O_WRONLY | O_TRUNC);
-	if (f < 0) {
+	f = fopen(fname, "w");
+	if (!f) {
 		oris_log_f(LOG_ERR, "could not open file %s (%d)", fname, errno);
 		return false;
 	}
 
-	fs = fdopen(f, "w");
-	fputs("[Definition]\n", fs);
+	fputs("[Definition]\n", f);
 	for (i = 0; i < tables->count; i++) {
-		fprintf(fs, "%s=\n", tables->tables[i].name);
+		fprintf(f, "%s=\n", tables->tables[i].name);
 	}
 
-	fputs("\n", fs);
+	fputs("\n", f);
 	for (i = 0; i < tables->count; i++) {
-		fprintf(fs, "[%s]\n", tables->tables[i].name);
+		fprintf(f, "[%s]\n", tables->tables[i].name);
 		for (j = 0; j < tables->tables[i].row_count; j++) {
 			row = tables->tables[i].rows[j];
 			col = 1;
@@ -268,17 +270,17 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 			while (col < row.field_count) {
 				if (*c == '\0') {
 					col++;
-					fputc(DUMP_DELIM, fs);
+					fputc(DUMP_DELIM, f);
 				} else {
-					fputc(*c, fs);
+					fputc(*c, f);
 				}
 				c++;
 			}
 		}
-		fputs("\n", fs);
+		fputs("\n", f);
 	}
 
-	fclose(fs);
+	fclose(f);
 
 	return true;
 }
