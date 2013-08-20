@@ -9,19 +9,19 @@ struct slab {
 typedef struct slab slab_t;
 
 struct mem_pool {
-    int obj_size;
-    int real_obj_size;
-    int cache_size;
-    int slab_nr;
-    int obj_nr;
-    int free_obj_nr;
+    size_t obj_size;
+    size_t real_obj_size;
+    size_t cache_size;
+    size_t slab_nr;
+    size_t obj_nr;
+    size_t free_obj_nr;
     slab_t *slab_head;
     slab_t *recent_slab;
 };
 
 typedef struct mem_pool mem_pool_t;
 
-mem_pool_t *create_mem_pool(int obj_size);
+mem_pool_t *create_mem_pool(size_t obj_size);
 void destroy_mem_pool(mem_pool_t *mpl);
 
 void *mem_pool_alloc(mem_pool_t *mpl);

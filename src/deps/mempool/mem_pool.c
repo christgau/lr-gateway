@@ -35,24 +35,24 @@
  *
  */
 
-#define SLAB_CACHE(slab) ((void*)slab + sizeof(slab_t))
+#define SLAB_CACHE(slab) ((char*)slab + sizeof(slab_t))
 
 const size_t OBJ_NUM = 128;
 
 void set_freepointer(mem_pool_t *mpl, void *obj, void *fp)
 {
-    *(void **)(obj + mpl->obj_size) = fp;
+    *(char **)((char*) obj + mpl->obj_size) = fp;
 }
 
-void *get_freepointer(mem_pool_t *mpl, void *obj)
+void *get_freepointer(mem_pool_t *mpl, char *obj)
 {
-    return *(void **)(obj + mpl->obj_size);
+    return *(char **)(obj + mpl->obj_size);
 }
 
 void init_slab(mem_pool_t *mpl, slab_t *slab)
 {
-    void *start = SLAB_CACHE(slab);
-    void *end = SLAB_CACHE(slab) + mpl->cache_size;
+    char *start = SLAB_CACHE(slab);
+    char *end = SLAB_CACHE(slab) + mpl->cache_size;
 
     slab->free = start;
     for (; start < end; start += mpl->real_obj_size) {
@@ -85,7 +85,7 @@ void free_slab(slab_t *slab)
     free(slab);
 }
 
-mem_pool_t *create_mem_pool(int obj_size)
+mem_pool_t *create_mem_pool(size_t obj_size)
 {
     mem_pool_t *mpl = malloc(sizeof(mem_pool_t));
 
