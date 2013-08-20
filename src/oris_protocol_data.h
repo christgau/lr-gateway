@@ -3,7 +3,8 @@
 
 #include <event2/bufferevent.h>
 
-#include "oris_util.h"
+#include "oris_app_info.h"
+#include "oris_protocol.h"
 
 typedef struct oris_data_protocol_data {
 	oris_application_info_t* info;

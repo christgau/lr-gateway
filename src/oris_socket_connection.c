@@ -1,7 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef WIN32
 #include <unistd.h>
+#else
+#include <io.h>
+#define close _close
+#endif
 
 #include <event2/http.h>
 #include <event2/event.h>
@@ -17,7 +22,7 @@
 
 static const int SOCKET_RECONNECT_TIMEOUT = 10; /* two seconds */
 
-static void oris_socket_connection_write(void* connection, const void* buf, size_t bufsize);
+static void oris_socket_connection_write(const void* connection, const void* buf, const size_t bufsize);
 static void oris_server_connection_do_accept(evutil_socket_t listener, short event, void *ctx); 
 static void oris_server_socket_event_cb(struct bufferevent *bev, short event, void *ctx);
 static void oris_connection_event_cb(struct bufferevent *bev, short events, void *arg);
@@ -46,13 +51,13 @@ oris_socket_connection_t* oris_socket_connection_create(const char* name,
 		return NULL;
 	}
 
-	retval->base.write = (void*) oris_socket_connection_write;
+	retval->base.write = oris_socket_connection_write;
 
 	return retval;
 }
 
 static void oris_socket_connection_write(void* connection, const void* buf, 
-	size_t bufsize)
+	const size_t bufsize)
 {
 	bufferevent_write(((oris_socket_connection_t*) connection)->bufev, 
 		buf, bufsize);
@@ -226,7 +231,7 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 	memset(&svr_addr, 0, sizeof(svr_addr));
 	svr_addr.sin_family = AF_INET;
 	svr_addr.sin_addr.s_addr = 0;
-	svr_addr.sin_port = htons(evhttp_uri_get_port(uri));
+	svr_addr.sin_port = htons((unsigned short) evhttp_uri_get_port(uri));
 
 	retval->socket = socket(AF_INET, SOCK_STREAM, 0);
 	if (retval->socket == -1) {
@@ -261,7 +266,7 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 		oris_server_connection_do_accept, (void*) retval);
 	if (retval->listen_event == NULL) {
 		oris_log_f(LOG_ERR, "could not create event struct for %s", name);
-		close(retval->socket);
+		evutil_closesocket(retval->socket);
 		free(retval);
 		return NULL;
 	}
@@ -277,7 +282,7 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 	struct event_base* base = ((oris_socket_connection_t*) (connection))->libevent_info->base;
 	struct sockaddr_storage addr;
 	socklen_t slen = sizeof(addr);
-	int socket;
+	evutil_socket_t socket;
 
 	oris_log_f(LOG_INFO, "new connection on %s", connection->base.base.name);
 	socket = accept(listener, (struct sockaddr*)&addr, &slen); 
@@ -286,7 +291,7 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 		oris_log_f(LOG_ERR, "could not accept new client from %s",
 				((oris_connection_t*) connection)->name);
 	} else if (socket > FD_SETSIZE) {
-		close(socket);
+		evutil_closesocket(socket);
 	} else {
 		struct bufferevent* bev;
 
@@ -308,7 +313,7 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 
 void oris_server_connection_free(oris_connection_t* connection)
 {
-	close(((oris_server_connection_t*) connection)->socket);
+	evutil_closesocket(((oris_server_connection_t*) connection)->socket);
 	if (((oris_server_connection_t*) connection)->listen_event) {
 		event_free(((oris_server_connection_t*) connection)->listen_event);
 	}

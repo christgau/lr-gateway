@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "oris_protocol_data.h"
 #include "oris_util.h"
@@ -14,12 +15,12 @@
 static void process_line(char* line, oris_application_info_t* info);
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
 static void oris_protocol_data_write(const void* buf, size_t bufsize, 
-	void* connection, oris_data_write_fn_t transfer);
+	void* connection, oris_connection_write_fn_t transfer);
 static void oris_protocol_data_free(struct oris_protocol* protocol);
 
 void oris_protocol_data_init(struct oris_protocol* self)
 {
-	self->write = (void*) oris_protocol_data_write;
+	self->write = oris_protocol_data_write;
 	self->destroy = oris_protocol_data_free;
 }
 
@@ -45,13 +46,13 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 
 	/* process da data */
 	bufstart = pdata->buffer;
-	while (pdata->buf_size > 0 && (p_start = memchr(bufstart, LINE_DELIM_START, pdata->buf_size))) {
+	while (pdata->buf_size > 0 && (p_start = memchr((void*) bufstart, LINE_DELIM_START, pdata->buf_size))) {
 		
 		pdata->buf_size -= (p_start - bufstart) + 1;
 
 		/* find end delim */
 		if (pdata->buf_size > 0) {
-			p_end = memchr(++p_start, LINE_DELIM_END, pdata->buf_size);
+			p_end = memchr((void*) ++p_start, LINE_DELIM_END, pdata->buf_size);
 			if (p_end) {
 				*p_end = '\0';
 				process_line(p_start, pdata->info);
@@ -161,9 +162,12 @@ static void process_line(char* line, oris_application_info_t* info)
 
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info)
 {
-	oris_automation_event_t e = { EVT_TABLE, tbl->name };
-	oris_log_f(LOG_INFO, "table %s received (%d lines)", tbl->name, tbl->row_count);
+	oris_automation_event_t e;
+	
+	e.type = EVT_TABLE;
+	e.name = tbl->name;
 
+	oris_log_f(LOG_INFO, "table %s received (%d lines)", tbl->name, tbl->row_count);
 	oris_automation_trigger(&e, info);
 }
 
@@ -176,7 +180,7 @@ void oris_protocol_data_connected_cb(struct oris_protocol* self)
 }
 
 static void oris_protocol_data_write(const void* buf, size_t bufsize, 
-	void* connection, oris_data_write_fn_t transfer)
+	void* connection, oris_connection_write_fn_t transfer)
 {
 	uint8_t c;
 	

@@ -6,8 +6,6 @@
 
 #include "oris_protocol.h"
 
-typedef void (*oris_data_write_fn_t) (const void* connection, const void* buf, size_t count);
-
 typedef struct oris_connection { 
 	/* name of the connection */
 	char* name;
@@ -18,8 +16,8 @@ typedef struct oris_connection {
 	struct oris_protocol* protocol;
 	/* pointer to destructor */
 	void (*destroy)(struct oris_connection*);
-    /* this is a virtual method that actually writes to the connection */
-    oris_data_write_fn_t write;
+	/* this is a virtual method that actually writes to the connection */
+	oris_connection_write_fn_t write;
 } oris_connection_t;
 
 typedef struct oris_connection_list {

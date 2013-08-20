@@ -4,6 +4,14 @@
 #include <event2/buffer.h>
 #include <event2/bufferevent.h>
 
+/* function pointer type for functions to write on a connection */
+typedef void (*oris_connection_write_fn_t) (const void* connection, 
+	const void* buf, const size_t count);
+
+/* function pointer type for functions to write data using a protocol */
+typedef void (*oris_protocol_write_fn_t) (const void* buf, 
+	size_t bufsize, void* con, oris_connection_write_fn_t transfer_fn);
+
 typedef struct oris_protocol {
 	char* name;
 	void* data;
@@ -12,7 +20,7 @@ typedef struct oris_protocol {
 	bufferevent_data_cb read_cb;
 	void (*connected_cb)(struct oris_protocol*);
 	void (*disconnected_cb)(void);
-    void (*write)(const void* buf, size_t bufsize, void* con, void* transfer_fn);
+	oris_protocol_write_fn_t write;
 } oris_protocol_t;
 
 /**
