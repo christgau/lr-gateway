@@ -9,12 +9,6 @@
 #include "oris_automation_types.h"
 
 /* functions */
-bool oris_is_same_automation_event(oris_automation_event_t* a, oris_automation_event_t* b);
-
-void oris_init_automation_event(oris_automation_event_t* event, 
-		oris_event_type_t type, const char* name);
-void oris_free_automation_event(oris_automation_event_t* event);
-
 void oris_automation_trigger(oris_automation_event_t* event, oris_application_info_t* info);
 
 /* implementation of the automation actions */
