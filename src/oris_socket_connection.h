@@ -6,6 +6,7 @@
 #include <event2/util.h>
 #include <event2/bufferevent.h>
 
+#include "oris_libevent.h"
 #include "oris_connection.h"
 #include "oris_protocol.h"
 #include "oris_util.h"
