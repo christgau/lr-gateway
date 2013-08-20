@@ -12,6 +12,7 @@ options {
 
 #include "oris_app_info.h"
 #include "oris_automation_types.h"
+#include "oris_automation.h"
 #include "oris_configuration.h"
 #include "oris_interpret_tools.h"
 #include "oris_kvpair.h"
@@ -40,13 +41,13 @@ configuration[oris_application_info_t* value]
 	;
 
 connections[oris_application_info_t* info]
-	: ^(CONNECTIONS (key=IDENTIFIER value=expr { oris_create_connection(info, $key.text->chars, value); } )* )
+	: ^(CONNECTIONS (key=IDENTIFIER value=expr { oris_create_connection(info, (const char*) $key.text->chars, value); } )* )
 	;
 
 targets[oris_application_info_t* info]
 	: ^(TARGETS (key=IDENTIFIER value=expr { 
 			char* v_str = oris_expr_as_string($value.value);
-			oris_config_add_target(info, $key.text->chars, v_str);
+			oris_config_add_target(info, (const char*) $key.text->chars, v_str);
 			free(v_str);
 		} )*  )
 	;
@@ -62,9 +63,9 @@ event[oris_application_info_t* info, oris_automation_event_t* event]
 	;
 
 object returns [oris_automation_event_t event]
-	: ^(CONNECTION state=(ESTABLISHED|CLOSED)) { event.type = EVT_CONNECTION; event.name = $state.text->chars; }
-	| ^(TABLE name=IDENTIFIER) { event.type = EVT_TABLE; event.name = $name.text->chars; }
-	| ^(COMMAND cmd=STRING) { event.type = EVT_COMMAND; event.name = $cmd.text->chars; }
+	: ^(CONNECTION state=(ESTABLISHED|CLOSED)) { oris_init_automation_event(&event, EVT_CONNECTION, (const char*) $state.text->chars); }
+	| ^(TABLE name=IDENTIFIER) { oris_init_automation_event(&event, EVT_TABLE, (const char*) $name.text->chars); }
+	| ^(COMMAND cmd=STRING) { oris_init_automation_event(&event, EVT_COMMAND, (const char*) $cmd.text->chars); }
 	;
 
 conditional_action [oris_application_info_t* info]
@@ -75,9 +76,9 @@ conditional_action [oris_application_info_t* info]
 action[oris_application_info_t* info]
 	@init {	in_action = true; value = NULL; }
 	@after { in_action = false;	}
-	: ^(ITERATE req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_iterate_action(info, $req.text->chars, $tbl.text->chars); }
-	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, $name.text->chars); }
-	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? $tbl.text->chars : NULL, $it.value); }
+	: ^(ITERATE req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_iterate_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
+	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, (const char*) $name.text->chars); }
+	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
 	;
 
 http_method returns [enum evhttp_cmd_type http_method]
@@ -98,7 +99,7 @@ kv_list returns [pANTLR3_LIST list]
 			list = antlr3ListNew(sizeof(*list));
 		}
 	: (key=IDENTIFIER value=expr  { 
-			$list->add($list, oris_create_kv_pair($key.text->chars, $value.value, oris_free_expr_value_void), oris_free_kv_pair_void); 
+			$list->add($list, oris_create_kv_pair((const char*) $key.text->chars, $value.value, oris_free_expr_value_void), oris_free_kv_pair_void); 
 		} )*
 	;
 
