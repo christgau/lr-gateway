@@ -1,6 +1,8 @@
 #ifndef __ORIS_HTTP_H
 #define __ORIS_HTTP_H
 
+#include "oris_libevent.h"
+
 #include <event2/bufferevent.h>
 #include <event2/http.h>
 #include <openssl/ssl.h>

@@ -1,13 +1,15 @@
 #ifndef __ORIS_APP_INFO_H
 #define __ORIS_APP_INFO_H
 
-#include "oris_interpret_tools.h"
+#include "oris_libevent.h"
 
-#include <openssl/ssl.h>
 #include "oris_http.h"
 #include "oris_table.h"
-#include "oris_libevent.h"
 #include "oris_connection.h"
+#include "oris_interpret_tools.h"
+
+/* must be placed to avoid compilation issues with libeven/winsock (redefs) */
+#include <openssl/ssl.h>
 
 /* main application state and configuration is held herein */
 typedef struct oris_application_info {

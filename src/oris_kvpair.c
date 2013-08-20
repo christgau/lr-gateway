@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef WIN32
+#define strdup _strdup
+#endif
+
 oris_kv_pair_t* oris_create_kv_pair(const char* key, void* value, oris_fn_free_kv_value_t free)
 {
 	oris_kv_pair_t* retval = calloc(1, sizeof(*retval));

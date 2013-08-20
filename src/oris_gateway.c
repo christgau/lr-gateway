@@ -1,12 +1,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-
-#ifndef _WINDOWS
 #include <getopt.h>
-#else 
-#include <unistd.h>
-#endif
 
 #include "oris_log.h"
 #include "oris_util.h"

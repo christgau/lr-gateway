@@ -1,6 +1,12 @@
+#include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include <errno.h>
 
+
+#ifdef _WIN32
+#include <io.h>
+#endif
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -162,7 +168,7 @@ int* oris_table_get_field_widths(oris_table_t* tbl)
 	for (i = 0; i < tbl->row_count; i++) {
 		buf = tbl->rows[i].buffer;
 		for (j = 0; j < tbl->rows[i].field_count; j++) {
-			l = strlen(buf);
+			l = (int) strlen(buf);
 			if (l > retval[j]) {
 				retval[j] = l;
 			}
@@ -240,7 +246,7 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 	oris_table_row_t row;
 	char* c;
 	
-	f = creat(fname, 0644);
+	f = open(fname, O_CREAT | O_WRONLY | O_TRUNC);
 	if (f < 0) {
 		oris_log_f(LOG_ERR, "could not open file %s (%d)", fname, errno);
 		return false;

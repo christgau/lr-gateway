@@ -1,5 +1,7 @@
-#include <errno.h>
 #include <stdio.h>
+#include <errno.h>
+
+#include "oris_libevent.h"
 #include <antlr3treeparser.h>
 #include <event2/http.h>
 
@@ -11,10 +13,10 @@
 #include "grammars/configParser.h"
 #include "grammars/configTree.h"
 
-#ifdef _WINDOWS
-#include <windows.h>
+#ifdef WIN32
 #define PATH_DELIMITER '\\'
 #define CONFIG_SUBPATH "" 
+#define snprintf _snprintf
 #else
 #define PATH_DELIMITER '/'
 #define CONFIG_SUBPATH "/etc"

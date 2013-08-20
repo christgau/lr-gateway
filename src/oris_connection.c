@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <event2/http.h>
 
 #include "oris_connection.h"
@@ -8,7 +9,6 @@
 #include "oris_protocol.h"
 #include "oris_log.h"
 #include "oris_socket_connection.h"
-
 
 oris_connection_t* oris_connection_create(const char* name, oris_protocol_t* protocol)
 {

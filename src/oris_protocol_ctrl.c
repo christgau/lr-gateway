@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <limits.h>
+#ifndef WIN32
+#include <unistd.h>
+#endif
 #include <event2/bufferevent.h>
 
 #include "oris_automation.h"
@@ -216,9 +218,10 @@ static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
 static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
+	char *fn;
 	word_end(&s);
-	char* fn = next_word(&s);
-
+	
+	fn = next_word(&s);
 	if (oris_tables_dump_to_file(&info->data_tables, fn ? fn : info->dump_fn)) {
 		evbuffer_add_printf(out, "tables dumped to %s", fn ? fn : info->dump_fn);
 	} else {
@@ -291,7 +294,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 		evbuffer_add_printf(out, "\r\n");
 		for (i = 1; i <= tbl->rows[tbl->current_row].field_count; i++) {
 			if (i > 1) {
-				for (j = strlen(str); j < field_widths[i - 2]; j++) {
+				for (j = (int) strlen(str); j < field_widths[i - 2]; j++) {
 					evbuffer_add(out, " ", 1);
 				}
 				evbuffer_add(out, " | ", 3);
@@ -336,7 +339,7 @@ static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
 	request = next_word(&s);
 
 	if (request) {
-		oris_log_f(LOG_DEBUG, "sending requesting \%s", request);
+		oris_log_f(LOG_DEBUG, "sending requesting %s", request);
 		oris_connections_send(&info->connections, "data", request, strlen(request));
 	} else {
 		evbuffer_add_printf(out, "now request given");
