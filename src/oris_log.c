@@ -11,7 +11,11 @@ static int logLevel;
 void oris_init_log(const char* logfilename, int desiredLogLevel)
 {
 	if (logfilename) {
+#ifndef WIN32
 		logFile = fopen(logfilename, "a");
+#else
+		fopen_s(&logFile, logfilename, "a");
+#endif
 	} else {
 		logFile = stderr;
 	}
@@ -25,7 +29,11 @@ static void oris_log_time(void)
 	struct tm *i;
 
 	time(&rawtime);
+#ifndef WIN32
 	i = localtime(&rawtime);
+#else
+	localtime_s(i, &rawtime);
+#endif
 	fprintf(logFile, "%4d-%02d-%02d %02d:%02d:%02d: ", 1900 + i->tm_year, i->tm_mon + 1, i->tm_mday, i->tm_hour, i->tm_min, i->tm_sec);
 }
 
