@@ -290,8 +290,6 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 		perror("accept");
 		oris_log_f(LOG_ERR, "could not accept new client from %s",
 				((oris_connection_t*) connection)->name);
-	} else if (socket > FD_SETSIZE) {
-		evutil_closesocket(socket);
 	} else {
 		struct bufferevent* bev;
 
