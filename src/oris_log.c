@@ -23,18 +23,26 @@ void oris_init_log(const char* logfilename, int desiredLogLevel)
 	logLevel = desiredLogLevel;
 }
 
-static void oris_log_time(void)
+static void get_localtime(struct tm* t)
 {
 	time_t rawtime;
-	struct tm *i;
 
 	time(&rawtime);
-#ifndef WIN32
-	i = localtime(&rawtime);
+#ifndef _WIN32
+	localtime_r(&rawtime, t);
 #else
-	localtime_s(i, &rawtime);
+	localtime_s(t, &rawtime);
 #endif
-	fprintf(logFile, "%4d-%02d-%02d %02d:%02d:%02d: ", 1900 + i->tm_year, i->tm_mon + 1, i->tm_mday, i->tm_hour, i->tm_min, i->tm_sec);
+}
+
+static void oris_log_time(void)
+{
+	struct tm t;
+
+	get_localtime(&t);
+	fprintf(logFile, "%4d-%02d-%02d %02d:%02d:%02d: ",
+		1900 + t.tm_year, t.tm_mon + 1, t.tm_mday,
+		t.tm_hour, t.tm_min, t.tm_sec);
 }
 
 static void oris_log_severity(int severity)
