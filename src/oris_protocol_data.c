@@ -12,6 +12,11 @@
 #define LINE_DELIM_END   0x03
 #define RECORD_DELIM     '|'
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4706 )
+#endif
+
 static void process_line(char* line, oris_application_info_t* info);
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
 static void oris_protocol_data_write(const void* buf, size_t bufsize, 
@@ -192,3 +197,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	c = LINE_DELIM_END;
 	transfer(connection, &c, sizeof(c));
 }
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif

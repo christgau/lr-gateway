@@ -82,6 +82,7 @@ action[oris_application_info_t* info]
 	;
 
 http_method returns [enum evhttp_cmd_type http_method]
+	@init { http_method = EVHTTP_REQ_GET; }
 	: 'get' { $http_method = EVHTTP_REQ_GET;  }
 	| 'put' { $http_method =  EVHTTP_REQ_PUT; }
 	| 'post' { $http_method = EVHTTP_REQ_POST; }
@@ -89,6 +90,7 @@ http_method returns [enum evhttp_cmd_type http_method]
 	;
 
 table_iterate returns [bool value]
+	@init { value = false; }
 	: 'table' { $value = false; }
 	| 'record' { $value = true; }
 	;
@@ -113,6 +115,7 @@ exprTree
 	;
 
 expr returns [oris_parse_expr_t* value]
+	@init { value = NULL; }
 	: ^(op=(EQUAL | NOT_EQUAL | LTH | LE | GE | GT | PLUS | MINUS | OR | MUL | DIV | MOD | AND)  a=expr b=expr) 
 		{
 			$value = oris_expr_eval_binary_op(a, b, $op.type);
