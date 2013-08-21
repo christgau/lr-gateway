@@ -6,14 +6,14 @@
 #ifndef _WIN32
 #include <syslog.h>
 #else
-#define LOG_DEBUG 10
-#define LOG_INFO 20
-#define LOG_NOTICE 30
-#define LOG_WARN 40
+#define LOG_DEBUG 7
+#define LOG_INFO 6
+#define LOG_NOTICE 5
+#define LOG_WARN 4
 #define LOG_WARNING LOG_WARN
-#define LOG_ERR 50
-#define LOG_ALERT 70
-#define LOG_CRIT 80
+#define LOG_ERR 3
+#define LOG_CRIT 2
+#define LOG_ALERT 1
 #endif
 
 /**
