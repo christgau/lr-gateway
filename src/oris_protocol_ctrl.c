@@ -88,7 +88,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 	struct evbuffer* input, *output; 
 	char* line, *cmd;
 	size_t n;
-	bool close;
+	bool close = false;
 
 	input = bufferevent_get_input(bev);
 	output = bufferevent_get_output(bev);
