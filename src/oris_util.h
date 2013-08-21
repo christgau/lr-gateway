@@ -12,7 +12,7 @@
 
 #define ORIS_VERSION "0.0.2"
 #ifdef _WIN32
-#define ORIS_USER_AGENT ("orisgateway/"  ORIS_VERSION, " (win32)")
+#define ORIS_USER_AGENT ("orisgateway/"  ORIS_VERSION " (win32)")
 #else
 #define ORIS_USER_AGENT ("orisgateway/"  ORIS_VERSION " (linux)")
 #endif
