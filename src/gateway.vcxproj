@@ -35,7 +35,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <PlatformToolset>Windows7.1SDK</PlatformToolset>
   </PropertyGroup>
@@ -209,7 +209,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>Ws2_32.lib;$(LIBEVENT)libevent.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(LIBEVENT)libevent.lib;$(LIBEVENT)libevent_openssl.lib;$(OPENSSL)lib\VC\static\ssleay32MT.lib;$(OPENSSL)lib\VC\static\libeay32MT.lib;$(ANTLR3C)$(Platform)\$(Configuration)Static\antlr3c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PreBuildEvent>
       <Command>java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)grammars $(SolutionDir)grammars\config.g</Command>
