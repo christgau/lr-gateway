@@ -14,6 +14,8 @@
 #include "grammars/configTree.h"
 
 #ifdef WIN32
+#include <stdlib.h>
+#include <string.h>
 #define PATH_DELIMITER '\\'
 #define CONFIG_SUBPATH "" 
 #define snprintf _snprintf
@@ -30,14 +32,22 @@ const char* ORIS_GW_CFG_DEFAULT_FILENAME = "automation.script";
 
 void oris_get_config_filename(char* buffer, size_t bufsize)
 {
-#ifdef _WINDOWS
-//	basepath = calloc(MAX_PATH, sizeof(*defaultpath));
-	/* get directory of the application */
+#ifdef WIN32
+	char *s;
+	if (_get_pgmptr(&s) == 0) {
+		strncpy(buffer, s, bufsize);
+		s = strrchr(buffer, PATH_DELIMITER);
+		if (s) {
+			*s = '\0';
+		}
+	} else {
+		*buffer = '\0';
+	}
 #else
+	*buffer = '\0'
 	strncpy(buffer, getenv("HOME"), bufsize);
-	bufsize -= strlen(buffer);
 #endif
-
+	bufsize -= strlen(buffer);
 	snprintf(buffer + strlen(buffer), bufsize, "%s%c%s", CONFIG_SUBPATH, PATH_DELIMITER, ORIS_GW_CFG_DEFAULT_FILENAME);
 }
 
@@ -62,7 +72,9 @@ bool oris_load_configuration(oris_application_info_t* info)
 	pANTLR3_BASE_TREE configTree, templates_tree;
 	pconfigTree walker;
 
-	oris_get_config_filename((char*) &fname, MAX_PATH - 1);
+	memset(fname, 0, sizeof(fname));
+	oris_get_config_filename(fname, MAX_PATH - 1);
+	oris_log_f(LOG_DEBUG, "loading configuration from: %s.", fname);
 
 	parsing_state.input = antlr3FileStreamNew((pANTLR3_UINT8) &fname, ANTLR3_ENC_UTF8);
 	if (parsing_state.input == NULL) {
