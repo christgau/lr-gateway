@@ -7,6 +7,11 @@
 #include "oris_util.h"
 #include "oris_http.h"
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable: 4706 )
+#endif
+
 static void http_request_done_cb(struct evhttp_request *req, void *ctx);
 static const char* oris_get_http_method_string(const enum evhttp_cmd_type method);
 
@@ -58,8 +63,6 @@ static const char* oris_get_http_method_string(const enum evhttp_cmd_type method
 		default:
 			return "?";
 	}
-
-	return "?";
 }
 
 #define MAX_URL_SIZE 256
@@ -103,3 +106,7 @@ void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
 		}
 	}
 }
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif

@@ -3,6 +3,11 @@
 #include <limits.h>
 #ifndef WIN32
 #include <unistd.h>
+#else
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4706 )
+#endif
 #endif
 #include <event2/bufferevent.h>
 
@@ -410,3 +415,7 @@ static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
 
 	oris_automation_trigger(&ev, info);
 }
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
