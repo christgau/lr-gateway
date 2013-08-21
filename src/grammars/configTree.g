@@ -74,8 +74,8 @@ conditional_action [oris_application_info_t* info]
 	;
 
 action[oris_application_info_t* info]
-	@init {	in_action = true; value = NULL; }
-	@after { in_action = false;	}
+	@init {	in_action = true; value = NULL; it = false; tbl=NULL; }
+	@after { in_action = false; }
 	: ^(ITERATE req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_iterate_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, (const char*) $name.text->chars); }
 	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
