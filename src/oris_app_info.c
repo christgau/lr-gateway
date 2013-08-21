@@ -72,6 +72,14 @@ static void oris_sigint_cb(evutil_socket_t fd, short type, void *arg)
 
 static bool oris_init_libevent(struct oris_application_info *info)
 {
+#ifdef WIN32
+	WORD wVersionRequested;
+	WSADATA wsaData;
+
+	wVersionRequested = MAKEWORD(2, 2);
+
+	(void) WSAStartup(wVersionRequested, &wsaData);
+#endif
 	info->libevent_info.base = event_base_new();
 	info->libevent_info.dns_base = evdns_base_new(info->libevent_info.base, true);
 
