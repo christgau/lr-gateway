@@ -23,7 +23,7 @@
 #include "oris_app_info.h"
 #include "oris_socket_connection.h"
 
-#ifndef _WINDOWS
+#ifndef WIN32
 #define SSL_CERT_PATH "/etc/ssl/certs/ca-certificates.crt"
 #endif
 
@@ -113,7 +113,7 @@ static bool oris_init_ssl(struct oris_application_info* info)
 		return false;
 	}
 
-#ifndef _WINDOWS
+#ifndef WIN32
 	if (SSL_CTX_load_verify_locations(info->ssl_ctx, SSL_CERT_PATH, NULL) != 1) {
 		oris_log_f(LOG_CRIT, "could not load certificates");
 		oris_log_ssl_error(LOG_CRIT);
