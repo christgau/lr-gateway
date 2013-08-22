@@ -49,6 +49,23 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 		evhttp_request_get_response_code_line(req));
 }
 
+bool oris_str_to_http_method(const char* str, enum evhttp_cmd_type* method)
+{
+	if (strcasecmp(str, "GET") == 0) {
+		*method = EVHTTP_REQ_GET;
+	} else if (strcasecmp(str, "POST") == 0) {
+		*method = EVHTTP_REQ_POST;
+	} else if (strcasecmp(str, "PUT") == 0) {
+		*method = EVHTTP_REQ_PUT;
+	} else if (strcasecmp(str, "DELETE") == 0) {
+		*method = EVHTTP_REQ_DELETE;
+	} else {
+		return false;
+	}
+
+	return true;
+}
+
 static const char* oris_get_http_method_string(const enum evhttp_cmd_type method)
 {
 	switch (method) {
