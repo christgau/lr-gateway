@@ -16,6 +16,7 @@
 #include "oris_connection.h"
 #include "oris_log.h"
 #include "oris_util.h"
+#include "oris_http.h"
 
 #define LINE_DELIM_CR 0x0D
 #define LINE_DELIM_LF 0x0A
@@ -51,6 +52,8 @@ static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_http(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 
 static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "add", "add a row of records to a table (usage: add table row)", oris_builtin_cmd_add },
@@ -58,6 +61,7 @@ static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "dump", "dump all tables to file (optional argument)", oris_builtin_cmd_dump },
 	{ "exit", "terminate connection", NULL },
 	{ "help", "show this help", oris_builtin_cmd_help },
+	{ "http", "issue http request to all targets (usage: method uri [body])", oris_builtin_cmd_help },
 	{ "list", "list objects: tables, targets", oris_builtin_cmd_list },
 	{ "pause", "disable automation actions", oris_builtin_cmd_pause_resume },
 	{ "request", "issue request to data feed provider(s)", oris_builtin_cmd_request },
@@ -395,7 +399,7 @@ static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
 	ev.name = next_word(&s);
 
 	if (!object) {
-		evbuffer_add_printf(out, "missing object (table or command");
+		evbuffer_add_printf(out, "missing object (table or command)");
 		return;
 	}
 
@@ -414,6 +418,44 @@ static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
 	}
 
 	oris_automation_trigger(&ev, info);
+}
+
+static void oris_builtin_cmd_http(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	char *method, *uri, *body_str;
+	evhttp_cmd_type method;
+	struct evbuffer* body;
+
+	word_end(&s);
+	method_str = next_word(&s);
+	uri = next_word(&s);
+	body_str = next_word(&s);
+
+	if (!method_str) {
+		evbuffer_add_printf(out, "missing http method");
+		return;
+	}
+
+	if (!uri) {
+		evbuffer_add_printf(out, "missing http uri");
+		return;
+	}
+
+	if (!oris_str_to_http_method(method_str, &method)) {
+		evbuffer_add_printf(out, "invalid http method (%d)", method_str);
+		return;
+	}
+
+	body = evbuffer_new();
+	if (body_str && strlen(body_str)) {
+		evbuffer_add(body, body_str, strlen(body_str));
+	}
+
+	oris_perform_http_on_targets(info->targets.items, info->targets.count,
+		method, uri, body);
+
+	evbuffer_free(body);
 }
 
 #ifdef _MSC_VER
