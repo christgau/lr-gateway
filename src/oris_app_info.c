@@ -23,7 +23,7 @@
 #include "oris_app_info.h"
 #include "oris_socket_connection.h"
 
-#ifndef WIN32
+#ifndef _WIN32
 #define SSL_CERT_PATH "/etc/ssl/certs/ca-certificates.crt"
 #endif
 
@@ -72,7 +72,7 @@ static void oris_sigint_cb(evutil_socket_t fd, short type, void *arg)
 
 static bool oris_init_libevent(struct oris_application_info *info)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	WORD wVersionRequested;
 	WSADATA wsaData;
 
@@ -113,7 +113,7 @@ static bool oris_init_ssl(struct oris_application_info* info)
 		return false;
 	}
 
-#ifndef WIN32
+#ifndef _WIN32
 	if (SSL_CTX_load_verify_locations(info->ssl_ctx, SSL_CERT_PATH, NULL) != 1) {
 		oris_log_f(LOG_CRIT, "could not load certificates");
 		oris_log_ssl_error(LOG_CRIT);

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define strdup _strdup
 #endif
 

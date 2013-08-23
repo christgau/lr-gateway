@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <io.h>
 #endif
 #include <fcntl.h>

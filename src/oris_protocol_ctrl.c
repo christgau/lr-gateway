@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #else
 #ifdef _MSC_VER

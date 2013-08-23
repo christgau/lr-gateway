@@ -11,7 +11,7 @@ static int logLevel;
 void oris_init_log(const char* logfilename, int desiredLogLevel)
 {
 	if (logfilename) {
-#ifndef WIN32
+#ifndef _WIN32
 		logFile = fopen(logfilename, "a");
 #else
 		fopen_s(&logFile, logfilename, "a");

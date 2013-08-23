@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef WIN32
+#ifndef _WIN32
 #include <unistd.h>
 #else
 #include <io.h>
@@ -242,7 +242,7 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 	}
 
 	evutil_make_socket_nonblocking(retval->socket);
-#ifndef WIN32
+#ifndef _WIN32
 	{
 		int one = 1;
 		setsockopt(retval->socket, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));

@@ -13,7 +13,7 @@
 #include "grammars/configParser.h"
 #include "grammars/configTree.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #include <stdlib.h>
 #include <string.h>
 #define PATH_DELIMITER '\\'
@@ -32,7 +32,7 @@ const char* ORIS_GW_CFG_DEFAULT_FILENAME = "automation.script";
 
 void oris_get_config_filename(char* buffer, size_t bufsize)
 {
-#ifdef WIN32
+#ifdef _WIN32
 	char *s;
 	if (_get_pgmptr(&s) == 0) {
 		strncpy(buffer, s, bufsize);
