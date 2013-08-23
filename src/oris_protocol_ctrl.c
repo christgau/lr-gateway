@@ -10,6 +10,7 @@
 #endif
 #endif
 #include <event2/bufferevent.h>
+#include <event2/http.h>
 
 #include "oris_automation.h"
 #include "oris_protocol_ctrl.h"
@@ -61,7 +62,7 @@ static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "dump", "dump all tables to file (optional argument)", oris_builtin_cmd_dump },
 	{ "exit", "terminate connection", NULL },
 	{ "help", "show this help", oris_builtin_cmd_help },
-	{ "http", "issue http request to all targets (usage: method uri [body])", oris_builtin_cmd_help },
+	{ "http", "issue http request to all targets (usage: method uri [body])", oris_builtin_cmd_http },
 	{ "list", "list objects: tables, targets", oris_builtin_cmd_list },
 	{ "pause", "disable automation actions", oris_builtin_cmd_pause_resume },
 	{ "request", "issue request to data feed provider(s)", oris_builtin_cmd_request },
@@ -423,8 +424,8 @@ static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
 static void oris_builtin_cmd_http(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
-	char *method, *uri, *body_str;
-	evhttp_cmd_type method;
+	char *method_str, *uri, *body_str;
+	enum evhttp_cmd_type method;
 	struct evbuffer* body;
 
 	word_end(&s);
@@ -443,7 +444,7 @@ static void oris_builtin_cmd_http(char* s, oris_application_info_t* info,
 	}
 
 	if (!oris_str_to_http_method(method_str, &method)) {
-		evbuffer_add_printf(out, "invalid http method (%d)", method_str);
+		evbuffer_add_printf(out, "invalid http method (%s)", method_str);
 		return;
 	}
 
