@@ -13,6 +13,7 @@
 #endif
 
 static void http_request_done_cb(struct evhttp_request *req, void *ctx);
+static void http_connection_close(struct evhttp_connection *con, void *ctx);
 static const char* oris_get_http_method_string(const enum evhttp_cmd_type method);
 
 
@@ -20,6 +21,8 @@ static const char* oris_get_http_method_string(const enum evhttp_cmd_type method
 static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 {
 	int status;
+	size_t length;
+	struct evbuffer* response;
 	oris_http_target_t* target = (oris_http_target_t*) ctx;
 
 	if (req == NULL) {
@@ -43,10 +46,23 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 		return;
 	}
 
+	response = evhttp_request_get_input_buffer(req);
+	length = evbuffer_get_length(response);
+
 	status = evhttp_request_get_response_code(req);
-	oris_log_f(status / 100 != 2 ? LOG_ERR : LOG_INFO, "http response %d %s", 
+	oris_log_f(status / 100 != 2 ? LOG_ERR : LOG_INFO, 
+		"http response %d %s (%d bytes body)", 
 		evhttp_request_get_response_code(req),
-		evhttp_request_get_response_code_line(req));
+		evhttp_request_get_response_code_line(req), 
+		length);
+
+	/* drop the actual response (THINK: log or dump somewhere) */
+	evbuffer_drain(response, length);
+}
+
+static void http_connection_close(struct evhttp_connection *con, void *ctx)
+{
+	oris_log_f(LOG_INFO, "http on %s connection closed", ((oris_http_target_t*) ctx)->name);
 }
 
 bool oris_str_to_http_method(const char* str, enum evhttp_cmd_type* method)
@@ -99,6 +115,9 @@ void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
 	for (i = 0; i < target_count; i++) {
 		request = evhttp_request_new(http_request_done_cb, &targets[i]);
 		if (request) {
+			/* todo: place this at a better position */
+			evhttp_connection_set_closecb(targets[i].connection, http_connection_close, targets + i);
+
 			output_headers = evhttp_request_get_output_headers(request);
 			evhttp_add_header(output_headers, "Host", evhttp_uri_get_host(targets[i].uri));
 			evhttp_add_header(output_headers, "User-Agent", ORIS_USER_AGENT);
