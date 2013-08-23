@@ -44,7 +44,7 @@ void oris_get_config_filename(char* buffer, size_t bufsize)
 		*buffer = '\0';
 	}
 #else
-	*buffer = '\0'
+	*buffer = '\0';
 	strncpy(buffer, getenv("HOME"), bufsize);
 #endif
 	bufsize -= strlen(buffer);

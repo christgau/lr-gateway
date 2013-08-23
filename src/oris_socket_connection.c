@@ -56,7 +56,7 @@ oris_socket_connection_t* oris_socket_connection_create(const char* name,
 	return retval;
 }
 
-static void oris_socket_connection_write(void* connection, const void* buf, 
+static void oris_socket_connection_write(const void* connection, const void* buf, 
 	const size_t bufsize)
 {
 	bufferevent_write(((oris_socket_connection_t*) connection)->bufev, 
