@@ -2,4 +2,5 @@
 configLexer.*
 configParser.*
 configTree.[ch]
+gtest.c
 gtest
