@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _WIN32
-#include <unistd.h>
-#else
+#ifdef _WIN32
 #include <io.h>
 #define close _close
 #endif

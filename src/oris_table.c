@@ -10,9 +10,6 @@
 #ifdef _WIN32
 #include <io.h>
 #endif
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 #include "oris_table.h"
 #include "oris_util.h"
