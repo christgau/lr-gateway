@@ -33,6 +33,11 @@ void oris_logs(int severity, const char* s);
 
 void oris_log_ssl_error(int severity);
 
+/**
+ * get/set log level
+ */
+int oris_get_log_level(void);
+void oris_set_log_level(int level);
 
 /**
  * oris_finalize_log()

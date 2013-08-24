@@ -109,6 +109,15 @@ void oris_log_ssl_error(int severity)
 	}
 }
 
+int oris_get_log_level(void)
+{
+	return logLevel;
+}
+
+void oris_set_log_level(int level)
+{
+	logLevel = level;
+}
 
 void oris_finalize_log(void)
 {
