@@ -12,6 +12,7 @@ int oris_main_default(oris_application_info_t *info)
 {
 	if (!oris_app_info_init(info)) {
 		oris_log_f(LOG_CRIT, "could not init application (see above). Exiting");
+		return EXIT_FAILURE;
 	}
 
 	oris_interpreter_init(&info->data_tables);
