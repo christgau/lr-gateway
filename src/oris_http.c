@@ -20,16 +20,16 @@ static const char* oris_get_http_method_string(const enum evhttp_cmd_type method
 /* taken from libevent https-client sample */
 static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 {
-	int status;
+	int status, nread;
 	size_t length;
 	struct evbuffer* response;
 	oris_http_target_t* target = (oris_http_target_t*) ctx;
+	char buffer[256];
 
 	if (req == NULL) {
 		bool printed_err = false;
 		int errcode = EVUTIL_SOCKET_ERROR();
 		unsigned long oslerr;
-		char buffer[256];
 
 		while ((oslerr = bufferevent_get_openssl_error(target->bev))) {
 			ERR_error_string_n(oslerr, buffer, sizeof(buffer));
@@ -56,13 +56,20 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 		evhttp_request_get_response_code_line(req), 
 		length);
 
-	/* drop the actual response (THINK: log or dump somewhere) */
-	evbuffer_drain(response, length);
+	if (oris_get_log_level() == LOG_DEBUG) {
+		while ((nread = evbuffer_remove(response, buffer, sizeof(buffer))) > 0) {
+			fwrite(buffer, nread, 1, stderr);
+		}
+	} else {
+		evbuffer_drain(response, length);
+	}
 }
 
 static void http_connection_close(struct evhttp_connection *con, void *ctx)
 {
 	oris_log_f(LOG_INFO, "http on %s connection closed", ((oris_http_target_t*) ctx)->name);
+
+	con = con; /* keep compiler happy */
 }
 
 bool oris_str_to_http_method(const char* str, enum evhttp_cmd_type* method)
@@ -129,8 +136,10 @@ void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
 			evutil_snprintf(url_buf, MAX_URL_SIZE - 1, "%s%s", evhttp_uri_get_path(
 					targets[i].uri), uri);
 
-			output_buffer = evhttp_request_get_output_buffer(request);
-			evbuffer_add_buffer_reference(output_buffer, body);
+			if (method == EVHTTP_REQ_PUT || method == EVHTTP_REQ_POST) {
+				output_buffer = evhttp_request_get_output_buffer(request);
+				evbuffer_add_buffer_reference(output_buffer, body);
+			}
 
 			oris_log_f(LOG_DEBUG, "sending request %s to '%s'", url_buf, targets[i].name);
 			if (evhttp_make_request(targets[i].connection, request, method, url_buf) != 0) {

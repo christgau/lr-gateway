@@ -449,7 +449,7 @@ static void oris_builtin_cmd_http(char* s, oris_application_info_t* info,
 	}
 
 	body = evbuffer_new();
-	if (body_str && strlen(body_str)) {
+	if (body_str && strlen(body_str) && (method == EVHTTP_REQ_POST || method == EVHTTP_REQ_PUT)) {
 		evbuffer_add(body, body_str, strlen(body_str));
 	}
 
