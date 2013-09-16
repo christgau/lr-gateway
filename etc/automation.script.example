@@ -2,15 +2,15 @@
 # vim: set filetype=conf shiftwidth=4 tabexpand
 
 connections:
-    datafeed: "data://192.168.2.72:4433"
+    datafeed: "data://192.168.2.76:2317"
     control: "ctrl://*:4422"
 	;
 
 targets:
 #    testing: "http://VirtualXP-54269/oris/backend"
-#    testing: "http://127.0.0.1:54082/oris/backend"
+    testing: "http://127.0.0.1:4616"
 #    live: "https://ec2.example.com"
-    main: "https://www.s14u.de"
+#    main: "https://www.s14u.de"
 #    local: "http://localhost/oris/backend"
 #    archive: "http://www.havel-regatta-verein.de/oris/backend"
 	;
@@ -19,56 +19,56 @@ on connection established:
 	request current_event;
 
 on table ver:
-	http post ("/event/" + {VER.1} + "/meta") using event;
+	http put ("/event/" + {VER.1}) using event;
 	http put "/currentevent" with value {VER.1};
 
 on table tod:
 	http put "/time" with value {TOD.1};
-	
+
 on table vrd:
-	http put ("/events/" + {VER.1} + "/comp/" + {VRD.1}) using competition for each record of VRD;
+	http put ("/event/" + {VER.1} + "/comp/" + {VRD.1}) using competition for each record of VRD;
 	request splits for each record in VRD;
-	request startlist for each record in VRD;
+#	request startlist for each record in VRD;
 
 on table sta:
-	http put ("/events/" + {VER.1} + "/comp/" + {STA!.1} + "/splits") using splits for table STA;
+	http put ("/event/" + {VER.1} + "/comp/" + {STA!.1} + "/splits") using splits for table STA;
 
 on table stl:
-	http put ("/events/" + {VER.1} + "/comp/" + {STL!.1} + "/startlist") using startlist for table STA;
+	http put ("/event/" + {VER.1} + "/comp/" + {STL!.1} + "/startlist") using startlist for table STA;
 
 on table log:
-	http put ("/events/" + {VER.1} + "/comp/" + {LOG.1} + "/result/" + {LOG.3}) using logentry;
+	http put ("/event/" + {VER.1} + "/comp/" + {LOG.1} + "/result/" + {LOG.3}) using logentry;
 
 on table stt:
-	if ({STT.3} == 6) http post ("/events/" + {VER.1} + "/comp/" + {STT.1} + "/state") with value {STT.3};
-	if ({STT.3} == 6) http delete ("/events/" + {VER.1} + "/comp/" + {STT!.1} + "/startlist");
-	if ({STT.3} == 0) http delete ("/events/" + {VER.1} + "/comp/" + {STT!.1} + "/results");
+	if ({STT.3} == 6) http post ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/state") with value {STT.3};
+	if ({STT.3} == 6) http delete ("/event/" + {VER.1} + "/comp/" + {STT!.1} + "/startlist");
+	if ({STT.3} == 0) http delete ("/event/" + {VER.1} + "/comp/" + {STT!.1} + "/results");
 #	request finalresult if {STT.3} = 3
-	
+
 template event:
 	title: {VER.2}
 	venue: {VER.3}
 	location: {VER.4}
-	date_from: TOKEN({VER.5}, 3, '.') + '-' + LPAD(TOKEN({VER.5}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VER.5}, 1, '.'), 2, '0')
-	date_to: TOKEN({VER.6}, 3, '.') + '-' + LPAD(TOKEN({VER.6}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VER.6}, 1, '.'), 2, '0')
+	dateFrom: TOKEN({VER.5}, 3, '.') + '-' + LPAD(TOKEN({VER.5}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VER.5}, 1, '.'), 2, '0')
+	dateTo: TOKEN({VER.6}, 3, '.') + '-' + LPAD(TOKEN({VER.6}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VER.6}, 1, '.'), 2, '0')
 	sport: {VER.7}
 
 template competition:
 	id: {VRD.1}
-	class: {VRD.3}
+	raceClass: {VRD.3}
 	label: {VRD.4}
-	datetime: TOKEN({VRD.6}, 3, '.') + '-' + LPAD(TOKEN({VRD.6}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VRD.6}, 1, '.'), 2, '0') + 'T' + {VRD.7} + ":00"
+	dateTime: TOKEN({VRD.6}, 3, '.') + '-' + LPAD(TOKEN({VRD.6}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VRD.6}, 1, '.'), 2, '0') + 'T' + {VRD.7} + ":00"
 	gender: {VRD.8}
 	qrule: {VRD.9}
 	state: {VRD.10}
 	round: {VRD.11}
 	heat: {VRD.12}
 	distance: {VRD.13}
-	race: {VRD.14} 
+	raceNr: {VRD.14}
 #	athletes: {VRD.15} -- number of athletes (not required)
 
 template splits:
-	id: {STA.1}
+	offset: {STA.1}
 	distance: {STA.4}
 
 template startlist:
