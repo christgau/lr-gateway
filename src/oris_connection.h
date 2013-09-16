@@ -6,7 +6,7 @@
 
 #include "oris_protocol.h"
 
-typedef struct oris_connection { 
+typedef struct oris_connection {
 	/* name of the connection */
 	char* name;
 	/* statistical data */
@@ -31,10 +31,10 @@ typedef struct oris_connection_list {
  * oris_connection_new
  *
  * create a new connection with the given name using the specified protocol
- * 
- * @param name char* 
+ *
+ * @param name char*
  * @param protocol oris_protocol_t
- * @return oris_connection_t* 
+ * @return oris_connection_t*
  */
 oris_connection_t* oris_connection_create(const char* name, struct oris_protocol* protocol);
 
@@ -42,7 +42,7 @@ oris_connection_t* oris_connection_create(const char* name, struct oris_protocol
  * initialize connection
  * @return bool true if initialization was successful
  */
-bool oris_connection_init(oris_connection_t* connection, const char* name, 
+bool oris_connection_init(oris_connection_t* connection, const char* name,
 		struct oris_protocol* protocol);
 
 
@@ -74,9 +74,9 @@ void oris_connection_free(oris_connection_t* connection);
 void oris_connections_add(oris_connection_list_t* list, oris_connection_t* connection);
 
 /**
- * sends the buffer/buf_size to all connections having a protocol with the given name 
+ * sends the buffer/buf_size to all connections having a protocol with the given name
  */
-void oris_connections_send(oris_connection_list_t* list, const char* proto_name, 
+void oris_connections_send(oris_connection_list_t* list, const char* proto_name,
     const void* buf, size_t buf_size);
 
 /**

@@ -52,7 +52,7 @@ oris_protocol_t* oris_get_protocol_from_scheme(const char* scheme, void *data)
 
 	if (scheme) {
 		if (strcmp(scheme, "ctrl") == 0) {
-			retval = oris_simple_protocol_create(scheme, 
+			retval = oris_simple_protocol_create(scheme,
 				oris_protocol_ctrl_read_cb);
 			if (retval) {
 				retval->connected_cb = oris_protocol_ctrl_connected_cb;
@@ -62,7 +62,7 @@ oris_protocol_t* oris_get_protocol_from_scheme(const char* scheme, void *data)
 				}
 			}
 		} else if (strcmp(scheme, "data") == 0) {
-			retval = oris_simple_protocol_create(scheme, 
+			retval = oris_simple_protocol_create(scheme,
 				oris_protocol_data_read_cb);
 			if (retval) {
                 oris_protocol_data_init(retval);

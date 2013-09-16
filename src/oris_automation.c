@@ -15,12 +15,12 @@ static char* oris_get_parsed_request(const char *name);
 
 bool oris_is_same_automation_event(oris_automation_event_t* a, oris_automation_event_t* b)
 {
-	return a && b && a->type == b->type && 
+	return a && b && a->type == b->type &&
 		a->name && b->name && strcasecmp(a->name, b->name) == 0;
 }
 
 
-void oris_init_automation_event(oris_automation_event_t* event, 
+void oris_init_automation_event(oris_automation_event_t* event,
 		oris_event_type_t type, const char* name)
 {
 	if (event) {
@@ -47,16 +47,16 @@ void oris_automation_trigger(oris_automation_event_t* event, oris_application_in
 	oris_configuration_perform_automation(event, info);
 }
 
-void oris_automation_iterate_action(oris_application_info_t* info, 
+void oris_automation_iterate_action(oris_application_info_t* info,
 	const char* request_name, const char* tbl_name)
 {
 	oris_table_t* tbl = oris_get_table(&info->data_tables, tbl_name);
 	pANTLR3_BASE_TREE req_tree = oris_get_request_parse_tree(request_name);
 	int l;
 	char* r;
-	
+
 	if (!tbl) {
-		oris_log_f(LOG_DEBUG, "table %s not found, not performing iterate using %s", 
+		oris_log_f(LOG_DEBUG, "table %s not found, not performing iterate using %s",
 				tbl_name, request_name);
 		return;
 	}
@@ -70,7 +70,7 @@ void oris_automation_iterate_action(oris_application_info_t* info,
 	tbl->current_row = l;
 }
 
-void oris_automation_request_action(oris_application_info_t* info, 
+void oris_automation_request_action(oris_application_info_t* info,
 	const char* request_name)
 {
 	char* r = oris_get_parsed_request(request_name);
@@ -159,7 +159,7 @@ static void oris_parse_template(struct evbuffer* target, pANTLR3_BASE_TREE tmpl,
 	}
 }
 
-static void oris_parse_iterated_template(struct evbuffer* buf, oris_table_t* tbl, 
+static void oris_parse_iterated_template(struct evbuffer* buf, oris_table_t* tbl,
 	pANTLR3_BASE_TREE template)
 {
 	char c;
@@ -200,7 +200,7 @@ static void oris_perform_http_with_buffer(oris_application_info_t* info,
 	url_expr = oris_expr_parse_from_tree(url);
 	url_str = oris_expr_as_string(url_expr);
 
-	oris_perform_http_on_targets(info->targets.items, info->targets.count, 
+	oris_perform_http_on_targets(info->targets.items, info->targets.count,
 			method, url_str, buf);
 
 	oris_free_and_null(url_str);
@@ -232,9 +232,9 @@ static void oris_perform_http_on_table(oris_application_info_t* info,
 	}
 }
 
-void oris_automation_http_action(oris_application_info_t* info, 
-    enum evhttp_cmd_type method, pANTLR3_BASE_TREE url, 
-    pANTLR3_BASE_TREE tmpl_name, oris_parse_expr_t* value_expr, 
+void oris_automation_http_action(oris_application_info_t* info,
+    enum evhttp_cmd_type method, pANTLR3_BASE_TREE url,
+    pANTLR3_BASE_TREE tmpl_name, oris_parse_expr_t* value_expr,
 	const char* tbl_name, bool perform_per_record)
 {
 	struct evbuffer* buf;

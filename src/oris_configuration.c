@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #define PATH_DELIMITER '\\'
-#define CONFIG_SUBPATH "" 
+#define CONFIG_SUBPATH ""
 #define snprintf _snprintf
 #else
 #define PATH_DELIMITER '/'
@@ -197,7 +197,7 @@ static pANTLR3_LIST get_nodes_of_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type
     return result;
 }
 
-void oris_configuration_perform_automation(oris_automation_event_t* event, 
+void oris_configuration_perform_automation(oris_automation_event_t* event,
 	oris_application_info_t* info)
 {
 	pconfigTree walker;

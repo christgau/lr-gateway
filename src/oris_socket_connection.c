@@ -21,7 +21,7 @@
 static const int SOCKET_RECONNECT_TIMEOUT = 10; /* two seconds */
 
 static void oris_socket_connection_write(const void* connection, const void* buf, const size_t bufsize);
-static void oris_server_connection_do_accept(evutil_socket_t listener, short event, void *ctx); 
+static void oris_server_connection_do_accept(evutil_socket_t listener, short event, void *ctx);
 static void oris_server_socket_event_cb(struct bufferevent *bev, short event, void *ctx);
 static void oris_connection_event_cb(struct bufferevent *bev, short events, void *arg);
 static void oris_create_client_socket(oris_socket_connection_t* connection);
@@ -54,10 +54,10 @@ oris_socket_connection_t* oris_socket_connection_create(const char* name,
 	return retval;
 }
 
-static void oris_socket_connection_write(const void* connection, const void* buf, 
+static void oris_socket_connection_write(const void* connection, const void* buf,
 	const size_t bufsize)
 {
-	bufferevent_write(((oris_socket_connection_t*) connection)->bufev, 
+	bufferevent_write(((oris_socket_connection_t*) connection)->bufev,
 		buf, bufsize);
 }
 
@@ -78,15 +78,15 @@ static void oris_create_client_socket(oris_socket_connection_t* connection)
 	}
 
 	connection->bufev = bufferevent_socket_new(
-			connection->libevent_info->base, -1, 
+			connection->libevent_info->base, -1,
 			BEV_OPT_CLOSE_ON_FREE);
 
-	bufferevent_setcb(connection->bufev, oris_connection_read_cb, NULL, 
+	bufferevent_setcb(connection->bufev, oris_connection_read_cb, NULL,
 			oris_connection_event_cb, connection);
 	bufferevent_enable(connection->bufev, EV_READ | EV_WRITE);
-	bufferevent_socket_connect_hostname(connection->bufev, 
-		connection->libevent_info->dns_base, AF_UNSPEC, 
-		evhttp_uri_get_host(connection->uri), 
+	bufferevent_socket_connect_hostname(connection->bufev,
+		connection->libevent_info->dns_base, AF_UNSPEC,
+		evhttp_uri_get_host(connection->uri),
 		evhttp_uri_get_port(connection->uri));
 }
 
@@ -97,9 +97,9 @@ static void oris_connection_reconnect_timer_cb(evutil_socket_t fd, short event, 
 	event_free(connection->reconnect_timeout_event);
 	connection->reconnect_timeout_event = NULL;
 
-	oris_log_f(LOG_INFO, "connection '%s': reconnecting to %s:%d", 
-			connection->base.name, 
-			evhttp_uri_get_host(connection->uri), 
+	oris_log_f(LOG_INFO, "connection '%s': reconnecting to %s:%d",
+			connection->base.name,
+			evhttp_uri_get_host(connection->uri),
 			evhttp_uri_get_port(connection->uri));
 
 	oris_create_client_socket(connection);
@@ -116,7 +116,7 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 
 	oris_log_f(LOG_DEBUG, "event connection status %d", events);
 	if (events & BEV_EVENT_CONNECTED) {
-		oris_log_f(LOG_INFO, "connection '%s' connected", connection->base.name);	
+		oris_log_f(LOG_INFO, "connection '%s' connected", connection->base.name);
 		if (connection->base.protocol->connected_cb) {
 			connection->base.protocol->connected_cb(connection->base.protocol);
 		}
@@ -124,19 +124,19 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 		if (events & BEV_EVENT_ERROR) {
 			int err = bufferevent_socket_get_dns_error(bev);
 			if (err)
-				oris_log_f(LOG_WARNING, "connection '%s': DNS error: %s", 
+				oris_log_f(LOG_WARNING, "connection '%s': DNS error: %s",
 					connection->base.name, evutil_gai_strerror(err));
 			else
-				oris_log_f(LOG_DEBUG, "connection '%s': other error: proberbly not connected", 
+				oris_log_f(LOG_DEBUG, "connection '%s': other error: proberbly not connected",
 					connection->base.name);
 		}
 		if (events & BEV_EVENT_EOF && connection->base.protocol->disconnected_cb) {
 			connection->base.protocol->disconnected_cb();
 		}
-		oris_log_f(LOG_DEBUG, "connection '%s' trying to reconnect to %s %d in %d secs", 
+		oris_log_f(LOG_DEBUG, "connection '%s' trying to reconnect to %s %d in %d secs",
 			connection->base.name,
-			evhttp_uri_get_host(connection->uri), 
-			evhttp_uri_get_port(connection->uri), 
+			evhttp_uri_get_host(connection->uri),
+			evhttp_uri_get_port(connection->uri),
 			SOCKET_RECONNECT_TIMEOUT);
 
 		/* start timer for reconnect attempts */
@@ -155,8 +155,8 @@ static void oris_connection_event_cb(struct bufferevent *bev, short events, void
 	}
 }
 
-bool oris_socket_connection_init(oris_socket_connection_t* connection, const char *name, 
-		oris_protocol_t* protocol, struct evhttp_uri *uri, 
+bool oris_socket_connection_init(oris_socket_connection_t* connection, const char *name,
+		oris_protocol_t* protocol, struct evhttp_uri *uri,
 		oris_libevent_base_info_t *info)
 {
 	if (!oris_connection_init((oris_connection_t*) connection, name, protocol)) {
@@ -209,7 +209,7 @@ oris_server_connection_t* oris_server_connection_create(const char* name,
 	struct sockaddr_in svr_addr;
 	oris_server_connection_t* retval;
 	int status;
-	
+
 	retval = calloc(1, sizeof(*retval));
 	if (!retval) {
 		perror("calloc");
@@ -283,7 +283,7 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 	evutil_socket_t socket;
 
 	oris_log_f(LOG_INFO, "new connection on %s", connection->base.base.name);
-	socket = accept(listener, (struct sockaddr*)&addr, &slen); 
+	socket = accept(listener, (struct sockaddr*)&addr, &slen);
 	if (socket < 0) {
 		perror("accept");
 		oris_log_f(LOG_ERR, "could not accept new client from %s",
@@ -294,7 +294,7 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 		oris_log_f(LOG_DEBUG, "accepted connection");
 		evutil_make_socket_nonblocking(socket);
 		bev = bufferevent_socket_new(base, socket, BEV_OPT_CLOSE_ON_FREE);
-		bufferevent_setcb(bev, ((oris_connection_t*) connection)->protocol->read_cb, 
+		bufferevent_setcb(bev, ((oris_connection_t*) connection)->protocol->read_cb,
 				NULL, oris_server_socket_event_cb, connection);
 		bufferevent_setwatermark(bev, EV_READ, 0, MAX_LINE_SIZE);
 		bufferevent_enable(bev, EV_READ | EV_WRITE);
@@ -324,7 +324,7 @@ oris_connection_t* oris_create_connection_from_uri(struct evhttp_uri* uri,
 	oris_protocol_t* protocol = oris_get_protocol_from_scheme(evhttp_uri_get_scheme(uri), data);
 	const char* scheme = evhttp_uri_get_scheme(uri);
 
-	if (protocol == NULL) { 
+	if (protocol == NULL) {
 		return NULL;
 	}
 

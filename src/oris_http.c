@@ -39,7 +39,7 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 
 		/* no ssl error, so maybe socket error */
 		if (!printed_err) {
-			oris_log_f(LOG_ERR, "socket error: %s (%d)", 
+			oris_log_f(LOG_ERR, "socket error: %s (%d)",
 				evutil_socket_error_to_string(errcode),	errcode);
 		}
 
@@ -50,10 +50,10 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 	length = evbuffer_get_length(response);
 
 	status = evhttp_request_get_response_code(req);
-	oris_log_f(status / 100 != 2 ? LOG_ERR : LOG_INFO, 
-		"http response %d %s (%d bytes body)", 
+	oris_log_f(status / 100 != 2 ? LOG_ERR : LOG_INFO,
+		"http response %d %s (%d bytes body)",
 		evhttp_request_get_response_code(req),
-		evhttp_request_get_response_code_line(req), 
+		evhttp_request_get_response_code_line(req),
 		length);
 
 	if (oris_get_log_level() == LOG_DEBUG) {
@@ -146,7 +146,7 @@ void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
 				oris_log_f(LOG_ERR, "error making http request");
 			}
 		} else {
-			oris_log_f(LOG_ERR, "could not send request %s to target %s. target's state may be undefined!", uri, 
+			oris_log_f(LOG_ERR, "could not send request %s to target %s. target's state may be undefined!", uri,
 					targets[i].name);
 		}
 	}

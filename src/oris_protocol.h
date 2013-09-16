@@ -5,11 +5,11 @@
 #include <event2/bufferevent.h>
 
 /* function pointer type for functions to write on a connection */
-typedef void (*oris_connection_write_fn_t) (const void* connection, 
+typedef void (*oris_connection_write_fn_t) (const void* connection,
 	const void* buf, const size_t count);
 
 /* function pointer type for functions to write data using a protocol */
-typedef void (*oris_protocol_write_fn_t) (const void* buf, 
+typedef void (*oris_protocol_write_fn_t) (const void* buf,
 	size_t bufsize, void* con, oris_connection_write_fn_t transfer_fn);
 
 typedef struct oris_protocol {
@@ -38,16 +38,16 @@ void oris_protocol_free(oris_protocol_t* protocol);
 
 /**
  * get the protocol instance from an uri scheme
- * @return oris_protocol_t* the according protocol instance or NULL 
+ * @return oris_protocol_t* the according protocol instance or NULL
  * 	if no matching protocol is found
  */
 oris_protocol_t* oris_get_protocol_from_scheme(const char* scheme, void *data);
 
 /**
- * receive data from an input buffer into another buffer, that might be 
+ * receive data from an input buffer into another buffer, that might be
  * reallocated if the provided space is not sufficient
- * @param 
- * @param 
+ * @param
+ * @param
  * @return the number of bytes received
  */
 

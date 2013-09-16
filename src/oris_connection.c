@@ -35,8 +35,8 @@ oris_connection_t* oris_connection_create(const char* name, oris_protocol_t* pro
 }
 
 
-bool oris_connection_init(oris_connection_t* connection, const char* name, oris_protocol_t* protocol) 
-{ 
+bool oris_connection_init(oris_connection_t* connection, const char* name, oris_protocol_t* protocol)
+{
 	connection->write = NULL;
 	connection->protocol = protocol;
 	connection->name = strdup(name);
@@ -97,8 +97,8 @@ int oris_connections_parse_config(yaml_event_t event, void* data, int level, boo
 
 	struct evhttp_uri *uri;
 
-	if (level == CONNECTION_LEVEL) {		
-		in_connections = (event.type == YAML_SCALAR_EVENT && 
+	if (level == CONNECTION_LEVEL) {
+		in_connections = (event.type == YAML_SCALAR_EVENT &&
 			strcmp((char*) event.data.scalar.value, CONNECTIONS_STR) == 0);
 	} if (level == CONNECTION_LEVEL + 1 && in_connections && event.type == YAML_SCALAR_EVENT) {
 		if (is_key) {
@@ -108,14 +108,14 @@ int oris_connections_parse_config(yaml_event_t event, void* data, int level, boo
 			if (uri) {
 				connection = oris_create_connection_from_uri(uri, key, data);
 				if (connection) {
-					oris_log_f(LOG_INFO, "new connection: %s -> %s", 
+					oris_log_f(LOG_INFO, "new connection: %s -> %s",
 						key, event.data.scalar.value);
 					oris_connections_add(connections, connection);
 				} else {
 					oris_log_f(LOG_ERR, "could not create connection %s", key);
 				}
 			} else {
-				oris_log_f(LOG_ERR, "invalid URI for connection %s: %s", 
+				oris_log_f(LOG_ERR, "invalid URI for connection %s: %s",
 					key, event.data.scalar.value);
 			}
 			free(key);
@@ -129,7 +129,7 @@ int oris_connections_parse_config(yaml_event_t event, void* data, int level, boo
 void oris_connections_add(oris_connection_list_t* list, oris_connection_t* connection)
 {
 	oris_connection_t **new_items, **items = list->items;
-	
+
 	if (connection) {
 		new_items = realloc(items, sizeof(*connection) * (list->count + 1));
 		if (new_items) {
@@ -140,7 +140,7 @@ void oris_connections_add(oris_connection_list_t* list, oris_connection_t* conne
 	}
 }
 
-void oris_connections_send(oris_connection_list_t* list, const char* proto_name, 
+void oris_connections_send(oris_connection_list_t* list, const char* proto_name,
     const void* buf, size_t buf_size)
 {
 	size_t i;
@@ -154,7 +154,7 @@ void oris_connections_send(oris_connection_list_t* list, const char* proto_name,
 
 void oris_connections_clear(oris_connection_list_t* list)
 {
-	size_t i; 
+	size_t i;
 
 	for (i = 0; i < list->count; i++) {
 		if (list->items[i]) {
@@ -180,7 +180,7 @@ void oris_free_connections(oris_connection_list_t *list)
 
 
 /*
-int oris_targets_parse_config(yaml_event_t event, void* data, int level, 
+int oris_targets_parse_config(yaml_event_t event, void* data, int level,
 	bool is_key)
 {
 	oris_application_info_t *info = (oris_application_info_t*) data;
@@ -194,8 +194,8 @@ int oris_targets_parse_config(yaml_event_t event, void* data, int level,
 
 	struct evhttp_uri *uri;
 
-	if (level == CONNECTION_LEVEL) {		
-		in_targets = (event.type == YAML_SCALAR_EVENT && 
+	if (level == CONNECTION_LEVEL) {
+		in_targets = (event.type == YAML_SCALAR_EVENT &&
 			strcmp((char*) event.data.scalar.value, CONNECTIONS_STR) == 0);
 	} if (level == CONNECTION_LEVEL + 1 && in_targets && event.type == YAML_SCALAR_EVENT) {
 		if (is_key) {

@@ -10,7 +10,7 @@ typedef struct {
 
 bool oris_is_same_automation_event(oris_automation_event_t* a, oris_automation_event_t* b);
 
-void oris_init_automation_event(oris_automation_event_t* event, 
+void oris_init_automation_event(oris_automation_event_t* event,
 		oris_event_type_t type, const char* name);
 void oris_free_automation_event(oris_automation_event_t* event);
 

@@ -36,7 +36,7 @@ int oris_main_default(oris_application_info_t *info)
 	oris_interpreter_finalize();
 	oris_app_info_finalize(info);
 
-#if LIBEVENT_VERSION_NUMBER >= 0x02010100 
+#if LIBEVENT_VERSION_NUMBER >= 0x02010100
 	oris_log_f(LOG_INFO, "LibEvent global shutdown.");
 	libevent_global_shutdown();
 #endif
@@ -105,14 +105,14 @@ bool oris_handle_args(oris_application_info_t *info)
 					info->log_level = LOG_ERR;
 				} else {
 					fprintf(stderr, "invalid log level %s\n", optarg);
-					info->main = &oris_print_usage; 
+					info->main = &oris_print_usage;
 					retval = true;
 				}
 				break;
 			case '?':
 			case 'h':
 				retval = true;
-				info->main = &oris_print_usage; 
+				info->main = &oris_print_usage;
 				break;
 			default:
 				fprintf(stderr, "unregonized option (%d)\n", opt_code);

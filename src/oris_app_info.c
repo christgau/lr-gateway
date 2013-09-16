@@ -49,7 +49,7 @@ static void oris_libevent_log_cb(int severity, const char* msg)
 		case _EVENT_LOG_ERR:
 			sev = LOG_ERR;
 			break;
-		default: 
+		default:
 			sev = LOG_WARNING;
 	}
 
@@ -87,7 +87,7 @@ static bool oris_init_libevent(struct oris_application_info *info)
 		oris_log_f(LOG_CRIT, "could not init libevent");
 		return false;
 	} else {
-		info->sigint_event = evsignal_new(info->libevent_info.base, SIGINT, oris_sigint_cb, 
+		info->sigint_event = evsignal_new(info->libevent_info.base, SIGINT, oris_sigint_cb,
 			info->libevent_info.base);
 		event_set_log_callback(oris_libevent_log_cb);
 		event_add(info->sigint_event, NULL);
@@ -199,7 +199,7 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 
 			if (!use_ssl) {
 				target->ssl = NULL;
-				target->bev = bufferevent_socket_new(config->libevent_info.base, 
+				target->bev = bufferevent_socket_new(config->libevent_info.base,
 					-1, BEV_OPT_CLOSE_ON_FREE);
 			} else {
 				target->ssl = SSL_new(config->ssl_ctx);
@@ -212,9 +212,9 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 				}
 				bufferevent_openssl_set_allow_dirty_shutdown(target->bev, 1);
 			}
-			
+
 			target->connection = evhttp_connection_base_bufferevent_new(
-				config->libevent_info.base, config->libevent_info.dns_base, 
+				config->libevent_info.base, config->libevent_info.dns_base,
 				target->bev, evhttp_uri_get_host(evuri),
 				(unsigned short) evhttp_uri_get_port(evuri));
 

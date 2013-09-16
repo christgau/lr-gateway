@@ -18,9 +18,9 @@ typedef struct oris_socket_connection {
  	struct bufferevent* bufev;
 	struct evhttp_uri* uri;
 	oris_libevent_base_info_t* libevent_info;
-	
+
 	struct event* reconnect_timeout_event;
-    
+
 } oris_socket_connection_t;
 
 typedef struct oris_server_connection {
@@ -37,7 +37,7 @@ oris_socket_connection_t* oris_socket_connection_create(const char* name,
 
 /* init a new connection */
 bool oris_socket_connection_init(oris_socket_connection_t* connection, const
-		char *name, oris_protocol_t* protocol, struct evhttp_uri *uri, 
+		char *name, oris_protocol_t* protocol, struct evhttp_uri *uri,
 		oris_libevent_base_info_t *info);
 
 /* finalize (close socket) */

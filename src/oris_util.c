@@ -19,7 +19,7 @@ bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size)
 		newptr = calloc(n, blk_size);
 	} else {
 		if (n > SIZE_MAX/blk_size || ptr == NULL) {
-			return false; 
+			return false;
 		}
 		newptr = realloc(*ptr, alloc_size);
 	}
@@ -40,14 +40,14 @@ bool oris_strtoint(const char* s, int* v)
 	errno = 0;
 	lv = strtol(s, &endptr, 10);
 
-	if (((lv == LONG_MIN || lv == LONG_MAX) && (errno != 0)) || 
+	if (((lv == LONG_MIN || lv == LONG_MAX) && (errno != 0)) ||
 		(lv == 0 && errno != 0) ||
 		(lv > INT_MAX || lv < INT_MIN) ||
 		(*endptr != '\0')) {
 		return false;
 	} else  {
 		*v = (int) lv;
-		return true; 
+		return true;
 	}
 }
 
@@ -64,7 +64,7 @@ char* oris_ltrim(char* s)
 char* oris_rtrim(char* s)
 {
 	char* p;
-	
+
 	for (p = s; *p; p++) ;
 	while (isblank(*p) && p != s) {
 		*p = 0;

@@ -51,21 +51,21 @@ int* oris_table_get_field_widths(oris_table_t* tbl);
 void oris_tables_init(oris_table_list_t* list);
 void oris_tables_finalize(oris_table_list_t* list);
 
-oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list, 
+oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	const char * name, bool create);
-		
+
 bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname);
 
-#define oris_get_table(tbls, name) oris_get_or_create_table(tbls, name, false) 
+#define oris_get_table(tbls, name) oris_get_or_create_table(tbls, name, false)
 
 /* misc/shortcut functions */
-const char* oris_tables_get_field_by_index(oris_table_list_t* list, 
+const char* oris_tables_get_field_by_index(oris_table_list_t* list,
     const char* name, const int index);
 
-const char* oris_tables_get_field(oris_table_list_t* list, const char* name, 
+const char* oris_tables_get_field(oris_table_list_t* list, const char* name,
 	const char* field);
 
-const char* oris_tables_get_field_by_number(oris_table_list_t* list, 
+const char* oris_tables_get_field_by_number(oris_table_list_t* list,
     const char* name, const int index);
 
 #endif

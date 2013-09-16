@@ -40,7 +40,7 @@ bool oris_table_add_row(oris_table_t* tbl, const char* s, char delim)
 		}
 		buf++;
 	}
-	
+
 	if (tbl->field_count < tbl->rows[tbl->row_count].field_count) {
 		tbl->field_count = tbl->rows[tbl->row_count].field_count;
 	}
@@ -105,7 +105,7 @@ static int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 	for (i = 0; i < tbl->field_count; i++) {
 		if (strcmp(field, name) == 0) {
 			return i;
-		} 
+		}
 
 		name = name + strlen(name) + 1;
 	}
@@ -115,13 +115,13 @@ static int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 
 const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index)
 {
-	oris_table_row_t* row; 
+	oris_table_row_t* row;
 	char* retval;
     int i;
 
 	if (tbl == NULL || tbl->row_count == 0) {
 		return NULL;
-	} 
+	}
 
 	if (tbl->current_row == -1) {
 		tbl->current_row = 0;
@@ -148,8 +148,8 @@ const char* oris_table_get_field(oris_table_t* tbl, const char* field)
 
 	if (tbl == NULL || tbl->row_count == 0) {
 		return NULL;
-	} 
-	
+	}
+
 	index = oris_table_get_field_index(tbl, field);
 
     return oris_table_get_field_by_index(tbl, index);
@@ -198,7 +198,7 @@ void oris_tables_finalize(oris_table_list_t* list)
 	oris_free_and_null(list->tables);
 }
 
-oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list, 
+oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	const char * name, bool create)
 {
 	size_t i, inspos;
@@ -252,7 +252,7 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 	FILE* f;
 	oris_table_row_t row;
 	char* c;
-	
+
 	f = fopen(fname, "w");
 	if (!f) {
 		oris_log_f(LOG_ERR, "could not open file %s (%d)", fname, errno);
@@ -290,21 +290,21 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 }
 
 /* misc/shortcut functions */
-const char* oris_tables_get_field_by_number(oris_table_list_t* list, 
+const char* oris_tables_get_field_by_number(oris_table_list_t* list,
     const char* name, const int index)
 {
 	oris_table_t* tbl;
-	
+
 	tbl = oris_get_table(list, name);
 
 	return (tbl ? oris_table_get_field_by_index(tbl, index) : NULL);
 }
 
-const char* oris_tables_get_field(oris_table_list_t* list, const char* name, 
+const char* oris_tables_get_field(oris_table_list_t* list, const char* name,
 	const char* field)
 {
 	oris_table_t* tbl;
-	
+
 	tbl = oris_get_table(list, name);
 
 	return (tbl ? oris_table_get_field(tbl, field) : NULL);
