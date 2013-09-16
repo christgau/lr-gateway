@@ -103,6 +103,7 @@ static char* strdup_iso8859_to_utf8(char* line)
 			*out++ = 0x80 + (*c++ & 0x3f);
 		}
 	}
+	*out = 0;
 
 	return (char*) retval;
 }
