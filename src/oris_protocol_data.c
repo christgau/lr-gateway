@@ -19,7 +19,7 @@
 
 static void process_line(char* line, oris_application_info_t* info);
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
-static void oris_protocol_data_write(const void* buf, size_t bufsize, 
+static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	void* connection, oris_connection_write_fn_t transfer);
 static void oris_protocol_data_free(struct oris_protocol* protocol);
 
@@ -52,7 +52,7 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 	/* process da data */
 	bufstart = pdata->buffer;
 	while (pdata->buf_size > 0 && (p_start = memchr((void*) bufstart, LINE_DELIM_START, pdata->buf_size))) {
-		
+
 		pdata->buf_size -= (p_start - bufstart) + 1;
 
 		/* find end delim */
@@ -93,7 +93,7 @@ static char* strdup_iso8859_to_utf8(char* line)
 	if (retval == NULL) {
 		return NULL;
 	}
-	
+
 	c = (unsigned char*) line;
 	while (*c) {
 		if (*c < 128) {
@@ -139,7 +139,7 @@ static void process_line(char* line, oris_application_info_t* info)
 
 	last_char_index = strlen(tbl_name) - 1;
 	is_last_line = tbl_name[last_char_index] == '0';
-	is_response_line = tbl_name[last_char_index] == '!';
+	is_response_line = !is_last_line && tbl_name[last_char_index] != '1';
 	if (!is_response_line) {
 		tbl_name[last_char_index] = '\0';
 	}
@@ -168,7 +168,7 @@ static void process_line(char* line, oris_application_info_t* info)
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info)
 {
 	oris_automation_event_t e;
-	
+
 	e.type = EVT_TABLE;
 	e.name = tbl->name;
 
@@ -184,11 +184,11 @@ void oris_protocol_data_connected_cb(struct oris_protocol* self)
 	oris_log_f(LOG_DEBUG, "triggering connection actions...");
 }
 
-static void oris_protocol_data_write(const void* buf, size_t bufsize, 
+static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	void* connection, oris_connection_write_fn_t transfer)
 {
 	uint8_t c;
-	
+
 	c = LINE_DELIM_START;
 	transfer(connection, &c, sizeof(c));
 
