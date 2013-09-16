@@ -221,7 +221,7 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 			inspos = tbl_list->count - 1;
 
 			while (inspos > 0 && strcmp(tbl_list->tables[inspos].name, name) > 0) {
-				tbl_list[i] = tbl_list[i - 1];
+				tbl_list->tables[i] = tbl_list->tables[i - 1];
 				inspos--;
 			}
 		} else {
