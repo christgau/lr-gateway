@@ -202,13 +202,19 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	const char * name, bool create)
 {
 	size_t i, inspos;
+	static size_t pos_cache = 0;
 
 	if (name == NULL) {
 		return NULL;
 	}
 
+	if (pos_cache < tbl_list->count && strcmp(tbl_list->tables[pos_cache].name, name) == 0) {
+		return &(tbl_list->tables[pos_cache]);
+	}
+
 	for (i = 0; i < tbl_list->count; i++) {
 		if (strcmp(tbl_list->tables[i].name, name) == 0) {
+			pos_cache = i;
 			return &(tbl_list->tables[i]);
 		}
 	}
@@ -232,6 +238,7 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 		oris_table_init(&(tbl_list->tables[i]));
 		tbl_list->tables[i].name = strdup(name);
 
+		pos_cache = i;
 		return &(tbl_list->tables[i]);
 	} else {
 		return NULL;
