@@ -168,7 +168,7 @@ static void oris_parse_iterated_template(struct evbuffer* buf, oris_table_t* tbl
 	l = tbl->current_row;
 
 	for (tbl->current_row = 0; tbl->current_row < tbl->row_count; tbl->current_row++) {
-		if (tbl->current_row > 1) {
+		if (tbl->current_row > 0) {
 			c = ','; evbuffer_add(buf, &c, sizeof(c));
 		}
 		c = '{'; evbuffer_add(buf, &c, sizeof(c));
