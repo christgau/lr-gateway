@@ -69,7 +69,7 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 
 static void http_connection_close(struct evhttp_connection *con, void *ctx)
 {
-	oris_log_f(LOG_INFO, "http on %s connection closed", ((oris_http_target_t*) ctx)->name);
+	oris_log_f(LOG_DEBUG, "http on %s connection closed", ((oris_http_target_t*) ctx)->name);
 
 	con = con; /* keep compiler happy */
 }
