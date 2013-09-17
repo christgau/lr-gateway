@@ -18,8 +18,10 @@
 #include <openssl/evp.h>
 #include <openssl/conf.h>
 #include <openssl/engine.h>
+#include <openssl/sha.h>
 
 #include "oris_log.h"
+#include "oris_util.h"
 #include "oris_app_info.h"
 #include "oris_socket_connection.h"
 
@@ -182,19 +184,32 @@ static void oris_ensure_userinfo(struct evhttp_uri *evuri)
 {
 	const char* userinfo = evhttp_uri_get_userinfo(evuri);
 	char s[USERINFO_BUF_SIZE] = { 0 };
-	size_t len = strlen(userinfo);
+	size_t len = userinfo ? strlen(userinfo) : 0;
+	char* pass = len ? strchr(userinfo, ':') : NULL;
+	unsigned char pass_hash[SHA256_DIGEST_LENGTH];
+	char pass_hash_hex[SHA256_DIGEST_LENGTH * 2 + 1];
+	SHA256_CTX sha;
 
-	if (!userinfo || len == 0) {
+	SHA256_Init(&sha);
+	if (len == 0) {
 		/* no userinfo specified, set defaults */
-		snprintf(s, USERINFO_BUF_SIZE - 1, "%s:%s",
-			ORIS_DEFAULT_HTTP_USER, ORIS_DEFAULT_HTTP_PASSWORD);
-		evhttp_uri_set_userinfo(evuri, s);
-	} else if (strchr(userinfo, ':') == NULL) {
+		snprintf(s, sizeof(s) - 1, "%s", ORIS_DEFAULT_HTTP_USER);
+		SHA256_Update(&sha, ORIS_DEFAULT_HTTP_PASSWORD, strlen(ORIS_DEFAULT_HTTP_PASSWORD));
+	} else if (!pass) {
 		/* username but no password, set default password */
-		snprintf(s, USERINFO_BUF_SIZE - 1, "%s:%s", userinfo,
-			ORIS_DEFAULT_HTTP_PASSWORD);
-		evhttp_uri_set_userinfo(evuri, s);
+		snprintf(s, sizeof(s) - 1, "%s", userinfo);
+		SHA256_Update(&sha, ORIS_DEFAULT_HTTP_PASSWORD, strlen(ORIS_DEFAULT_HTTP_PASSWORD));
+	} else {
+		/* both given, extract */
+		snprintf(s, pass - s, "%s", userinfo);
+		pass++;
+		SHA256_Update(&sha, pass, strlen(pass));
 	}
+	SHA256_Final(pass_hash, &sha);
+	oris_buf_to_hex(pass_hash, sizeof(pass_hash), pass_hash_hex);
+
+	snprintf(s, sizeof(s) - strlen(s) - 1, ":%s", pass_hash_hex);
+	evhttp_uri_set_userinfo(evuri, s);
 }
 
 void oris_config_add_target(oris_application_info_t* config, const char* name, const char* uri)
