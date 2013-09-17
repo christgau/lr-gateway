@@ -89,7 +89,7 @@ static char* strdup_iso8859_to_utf8(char* line)
 		}
 	}
 
-	retval = out = malloc(size);
+	retval = out = malloc(size + 1);
 	if (retval == NULL) {
 		return NULL;
 	}
