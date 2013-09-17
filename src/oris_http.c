@@ -129,7 +129,7 @@ static void oris_set_auth_headers(struct evkeyvalq* headers, struct evhttp_uri* 
 
 	SHA256_Init(&sha);
 	SHA256_Update(&sha, userinfo, strlen(userinfo)); /* username:passwordhash */
-	SHA256_Update(&sha, token_hex, sizeof(token_hex)); /* generated nonce aka request token */
+	SHA256_Update(&sha, token_hex, sizeof(token_hex) - 1); /* generated nonce aka request token */
 	SHA256_Final(token, &sha);
 
 	oris_buf_to_hex(token, sizeof(token), token_hex);
