@@ -269,7 +269,7 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 		fprintf(f, "[%s]\n", tables->tables[i].name);
 		for (j = 0; j < tables->tables[i].row_count; j++) {
 			row = tables->tables[i].rows[j];
-			col = 1;
+			col = 0;
 			c = row.buffer;
 			while (col < row.field_count) {
 				if (*c == '\0') {
@@ -280,6 +280,7 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 				}
 				c++;
 			}
+			fputs("\n", f);
 		}
 		fputs("\n", f);
 	}
