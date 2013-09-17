@@ -113,7 +113,7 @@ static void oris_set_auth_headers(struct evkeyvalq* headers, struct evhttp_uri* 
 {
 	const char* userinfo = evhttp_uri_get_userinfo(uri);
 	char* s = strchr(userinfo, ':');
-	unsigned char token[REQ_TOKEN_SIZE];
+	unsigned char token[REQ_TOKEN_SIZE] = { 0 };
 	char token_hex[REQ_TOKEN_SIZE * 2 + 1];
 	SHA256_CTX sha;
 
