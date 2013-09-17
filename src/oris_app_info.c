@@ -27,8 +27,12 @@
 #define SSL_CERT_PATH "/etc/ssl/certs/ca-certificates.crt"
 #endif
 
+#define ORIS_DEFAULT_HTTP_PASSWORD "C57yec34kpza86g4"
+#define ORIS_DEFAULT_HTTP_USER "oris"
+
 /* forwards */
 static void oris_targets_clear(oris_http_target_t* targets, int *count);
+static void oris_ensure_userinfo(struct evhttp_uri *evuri);
 
 /* definitons */
 static void oris_libevent_log_cb(int severity, const char* msg)
@@ -172,6 +176,27 @@ void oris_app_info_finalize(oris_application_info_t* info)
 	oris_finalize_ssl(info);
 }
 
+#define USERINFO_BUF_SIZE 128
+
+static void oris_ensure_userinfo(struct evhttp_uri *evuri)
+{
+	const char* userinfo = evhttp_uri_get_userinfo(evuri);
+	char s[USERINFO_BUF_SIZE] = { 0 };
+	size_t len = strlen(userinfo);
+
+	if (!userinfo || len == 0) {
+		/* no userinfo specified, set defaults */
+		snprintf(s, USERINFO_BUF_SIZE - 1, "%s:%s",
+			ORIS_DEFAULT_HTTP_USER, ORIS_DEFAULT_HTTP_PASSWORD);
+		evhttp_uri_set_userinfo(evuri, s);
+	} else if (strchr(userinfo, ':') == NULL) {
+		/* username but no password, set default password */
+		snprintf(s, USERINFO_BUF_SIZE - 1, "%s:%s", userinfo,
+			ORIS_DEFAULT_HTTP_PASSWORD);
+		evhttp_uri_set_userinfo(evuri, s);
+	}
+}
+
 void oris_config_add_target(oris_application_info_t* config, const char* name, const char* uri)
 {
 	oris_http_target_t* items;
@@ -184,14 +209,14 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 	if (evuri) {
 		items = realloc(config->targets.items, (config->targets.count + 1) * sizeof(*items));
 
-		use_ssl = strcasecmp(evhttp_uri_get_scheme(evuri), "https") == 0;
-		port = evhttp_uri_get_port(evuri);
-		if (port == -1) {
-			evhttp_uri_set_port(evuri, use_ssl ? 443 : 80);
-		}
-		oris_log_f(LOG_INFO, "http port is %d", evhttp_uri_get_port(evuri));
-
 		if (items) {
+			use_ssl = strcasecmp(evhttp_uri_get_scheme(evuri), "https") == 0;
+			port = evhttp_uri_get_port(evuri);
+			if (port == -1) {
+				evhttp_uri_set_port(evuri, use_ssl ? 443 : 80);
+			}
+
+			oris_ensure_userinfo(evuri);
 			config->targets.items = items;
 			target = config->targets.items + config->targets.count;
 			target->name = strdup(name);
