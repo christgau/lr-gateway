@@ -3,6 +3,7 @@
 #include <limits.h>
 #include <errno.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "oris_util.h"
 
@@ -31,6 +32,15 @@ bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size)
 		return true;
 	} else {
 		return false;
+	}
+}
+
+size_t oris_safe_strlen(const char* s)
+{
+	if (s) {
+		return strlen(s);
+	} else {
+		return 0;
 	}
 }
 
