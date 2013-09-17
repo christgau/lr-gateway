@@ -31,4 +31,6 @@ char* oris_ltrim(char* s);
 char* oris_rtrim(char* s);
 char* oris_upper_str(char* s);
 
+void oris_buf_to_hex(const unsigned char* raw, size_t size, char* const s);
+
 #endif /* __ORIS_UTIL_H */

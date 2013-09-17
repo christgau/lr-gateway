@@ -9,6 +9,8 @@
 const oris_error_t ORIS_SUCCESS = 0;
 const oris_error_t ORIS_EINVALID_ARG = 0x80010001;
 
+static const char hex_chars[] = "0123456789abcdef";
+
 bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size)
 {
 	void* newptr;
@@ -83,4 +85,16 @@ char* oris_upper_str(char* s)
 	}
 
 	return r;
+}
+
+void oris_buf_to_hex(const unsigned char* raw, size_t size, char* const s)
+{
+	size_t i;
+
+	for (i = 0; i < size; i++) {
+		s[i] = hex_chars[(raw[i] >> 4) & 0x0f];
+		s[i + 1] = hex_chars[raw[i] & 0x0f];
+	}
+
+	s[size * 2 + 1] = 0;
 }

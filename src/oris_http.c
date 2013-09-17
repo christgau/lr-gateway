@@ -14,8 +14,6 @@
 #pragma warning( disable: 4706 )
 #endif
 
-static const char hex_chars[] = "0123456789abcdef";
-
 static void http_request_done_cb(struct evhttp_request *req, void *ctx);
 static void http_connection_close(struct evhttp_connection *con, void *ctx);
 static const char* oris_get_http_method_string(const enum evhttp_cmd_type method);
@@ -107,18 +105,6 @@ static const char* oris_get_http_method_string(const enum evhttp_cmd_type method
 		default:
 			return "?";
 	}
-}
-
-static inline void oris_buf_to_hex(const unsigned char* raw, size_t size, char* const s)
-{
-	size_t i;
-
-	for (i = 0; i < size; i++) {
-		s[i] = hex_chars[(raw[i] >> 4) & 0x0f];
-		s[i + 1] = hex_chars[raw[i] & 0x0f];
-	}
-
-	s[size * 2 + 1] = 0;
 }
 
 #define REQ_TOKEN_SIZE SHA256_DIGEST_LENGTH /* 256 bit */
