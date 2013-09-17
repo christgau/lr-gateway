@@ -102,9 +102,9 @@ void oris_buf_to_hex(const unsigned char* raw, size_t size, char* const s)
 	size_t i;
 
 	for (i = 0; i < size; i++) {
-		s[i] = hex_chars[(raw[i] >> 4) & 0x0f];
-		s[i + 1] = hex_chars[raw[i] & 0x0f];
+		s[i * 2] = hex_chars[(raw[i] >> 4) & 0x0f];
+		s[i * 2 + 1] = hex_chars[raw[i] & 0x0f];
 	}
 
-	s[size * 2 + 1] = 0;
+	s[size * 2] = 0;
 }

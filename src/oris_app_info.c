@@ -193,11 +193,11 @@ static void oris_ensure_userinfo(struct evhttp_uri *evuri)
 	SHA256_Init(&sha);
 	if (len == 0) {
 		/* no userinfo specified, set defaults */
-		snprintf(s, sizeof(s) - 1, "%s", ORIS_DEFAULT_HTTP_USER);
+		snprintf(s, sizeof(s), "%s", ORIS_DEFAULT_HTTP_USER);
 		SHA256_Update(&sha, ORIS_DEFAULT_HTTP_PASSWORD, strlen(ORIS_DEFAULT_HTTP_PASSWORD));
 	} else if (!pass) {
 		/* username but no password, set default password */
-		snprintf(s, sizeof(s) - 1, "%s", userinfo);
+		snprintf(s, sizeof(s), "%s", userinfo);
 		SHA256_Update(&sha, ORIS_DEFAULT_HTTP_PASSWORD, strlen(ORIS_DEFAULT_HTTP_PASSWORD));
 	} else {
 		/* both given, extract */
@@ -207,8 +207,10 @@ static void oris_ensure_userinfo(struct evhttp_uri *evuri)
 	}
 	SHA256_Final(pass_hash, &sha);
 	oris_buf_to_hex(pass_hash, sizeof(pass_hash), pass_hash_hex);
+	pass_hash_hex[sizeof(pass_hash_hex) - 1] = 0;
 
-	snprintf(s, sizeof(s) - strlen(s) - 1, ":%s", pass_hash_hex);
+	len = strlen(s);
+	snprintf(s + len, sizeof(s) - len, ":%s", pass_hash_hex);
 	evhttp_uri_set_userinfo(evuri, s);
 }
 

@@ -111,7 +111,7 @@ static const char* oris_get_http_method_string(const enum evhttp_cmd_type method
 
 static void oris_set_auth_headers(struct evkeyvalq* headers, struct evhttp_uri* uri)
 {
-	char* userinfo = strdup(evhttp_uri_get_userinfo(uri));
+	const char* userinfo = evhttp_uri_get_userinfo(uri);
 	char* s = strchr(userinfo, ':');
 	unsigned char token[REQ_TOKEN_SIZE];
 	char token_hex[REQ_TOKEN_SIZE * 2 + 1];
@@ -134,8 +134,6 @@ static void oris_set_auth_headers(struct evkeyvalq* headers, struct evhttp_uri* 
 
 	oris_buf_to_hex(token, sizeof(token), token_hex);
 	evhttp_add_header(headers, "OrisAuthToken", token_hex);
-
-	free(userinfo);
 }
 
 #define MAX_URL_SIZE 256
