@@ -2,17 +2,12 @@
 # vim: set filetype=conf shiftwidth=4 tabexpand
 
 connections:
-    datafeed: "data://192.168.2.76:2317"
+    datafeed: "data://sport.example.com:2317"
     control: "ctrl://*:4422"
 	;
 
 targets:
-#    testing: "http://VirtualXP-54269/oris/backend"
-    testing: "http://127.0.0.1:4616"
-#    live: "https://ec2.example.com"
-#    main: "https://www.s14u.de"
-#    local: "http://localhost/oris/backend"
-#    archive: "http://www.havel-regatta-verein.de/oris/backend"
+    testing: "http://liveresults.www.example.com/"
 	;
 
 on connection established:
@@ -28,7 +23,7 @@ on table tod:
 on table vrd:
 	http put ("/event/" + {VER.1} + "/comp/" + {VRD.1}) using competition for each record of VRD;
 	request splits for each record in VRD;
-#	request startlist for each record in VRD;
+	request startlist for each record in VRD;
 
 on table sta:
 	http put ("/event/" + {VER.1} + "/comp/" + {STA!.1} + "/splits") using splits for table STA;
@@ -43,7 +38,6 @@ on table stt:
 	if ({STT.3} == 6) http post ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/state") with value {STT.3};
 	if ({STT.3} == 6) http delete ("/event/" + {VER.1} + "/comp/" + {STT!.1} + "/startlist");
 	if ({STT.3} == 0) http delete ("/event/" + {VER.1} + "/comp/" + {STT!.1} + "/results");
-#	request finalresult if {STT.3} = 3
 
 template event:
 	title: {VER.2}
@@ -65,7 +59,6 @@ template competition:
 	heat: {VRD.12}
 	distance: {VRD.13}
 	raceNr: {VRD.14}
-#	athletes: {VRD.15} -- number of athletes (not required)
 
 template splits:
 	offset: {STA.1}
