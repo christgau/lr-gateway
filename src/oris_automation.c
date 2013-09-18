@@ -64,6 +64,7 @@ void oris_automation_iterate_action(oris_application_info_t* info,
 	l = tbl->current_row;
 	for (tbl->current_row = 0; tbl->current_row < tbl->row_count; tbl->current_row++) {
 		r = oris_parse_request_tree(req_tree);
+		oris_log_f(LOG_DEBUG, "requesting %s for row %d in %s", r, tbl->current_row, tbl->name);
 		oris_connections_send(&info->connections, "data", r, strlen(r));
 		free(r);
 	}
