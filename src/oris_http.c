@@ -52,7 +52,7 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 	length = evbuffer_get_length(response);
 
 	status = evhttp_request_get_response_code(req);
-	oris_log_f(status / 100 != 2 ? LOG_ERR : LOG_INFO,
+	oris_log_f(status / 100 != 2 && status == 0 ? LOG_ERR : LOG_INFO,
 		"http response %d %s (%d bytes body)",
 		evhttp_request_get_response_code(req),
 		evhttp_request_get_response_code_line(req),
