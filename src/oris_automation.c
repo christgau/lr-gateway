@@ -1,4 +1,6 @@
 #include <string.h>
+#include <sys/queue.h>
+#include <event2/event.h>
 
 #include "oris_util.h"
 #include "oris_log.h"
@@ -12,6 +14,41 @@
 
 static char* oris_parse_request_tree(const pANTLR3_BASE_TREE parse_tree);
 static char* oris_get_parsed_request(const char *name);
+static void ev_request_cb(int fd, short evtype, void *arg);
+
+static struct event* ev_request;
+
+STAILQ_HEAD(request_head, data_request) pending_requests;
+
+typedef struct data_request {
+	char* message;
+	STAILQ_ENTRY(data_request) queue;
+} data_request_t;
+
+bool oris_automation_init(oris_application_info_t* app_info)
+{
+	STAILQ_INIT(&pending_requests);
+
+	return (ev_request = event_new(app_info->libevent_info.base, -1, EV_READ, 
+		ev_request_cb, app_info));
+}
+
+void oris_automation_finalize()
+{
+	data_request_t* i;
+
+	while (!STAILQ_EMPTY(&pending_requests)) {
+		i = STAILQ_FIRST(&pending_requests);
+		STAILQ_REMOVE_HEAD(&pending_requests, queue);
+		free(i->message);
+		free(i);
+    }
+
+	if (ev_request) {
+		event_free(ev_request);
+		ev_request = NULL;
+	}
+}
 
 bool oris_is_same_automation_event(oris_automation_event_t* a, oris_automation_event_t* b)
 {
@@ -71,16 +108,45 @@ void oris_automation_iterate_action(oris_application_info_t* info,
 	tbl->current_row = l;
 }
 
-void oris_automation_request_action(oris_application_info_t* info,
-	const char* request_name)
+void oris_automation_request_action(const char* request_name)
 {
-	char* r = oris_get_parsed_request(request_name);
+	data_request_t* request = calloc(sizeof(*request), 1);
 
-	if (r) {
-		oris_log_f(LOG_DEBUG, "sending requesting %s\n", r);
-		oris_connections_send(&info->connections, "data", r, strlen(r));
-		free(r);
+	if (!request) {
+		return;
 	}
+
+	if ((request->message = oris_get_parsed_request(request_name))) {
+		if (!STAILQ_EMPTY(&pending_requests)) {
+		}
+
+		STAILQ_INSERT_TAIL(&pending_requests, request, queue);
+
+		oris_log_f(LOG_DEBUG, "queueing request %s: %s\n", request_name, request->message);
+		event_active(ev_request, EV_WRITE, 0);
+	} else {
+		free(request);
+	}
+}
+
+static void ev_request_cb(int fd, short evtype, void *arg)
+{
+	data_request_t* request = STAILQ_FIRST(&pending_requests);
+	oris_application_info_t* info = (oris_application_info_t*) arg;
+
+	if (request) {
+		oris_connections_send(&info->connections, "data", request->message,
+			strlen(request->message));
+		STAILQ_REMOVE_HEAD(&pending_requests, queue);
+
+		if (!STAILQ_EMPTY(&pending_requests)) {
+			event_active(ev_request, EV_WRITE, 0);
+		}
+	}
+
+	/* keep compiler happy */
+	fd = fd;
+	evtype = evtype;
 }
 
 static char* oris_parse_request_tree(const pANTLR3_BASE_TREE parse_tree)
