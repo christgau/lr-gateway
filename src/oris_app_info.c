@@ -238,6 +238,7 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			target = config->targets.items + config->targets.count;
 			target->name = strdup(name);
 			target->uri = evuri;
+			target->enabled = true;
 
 			if (!use_ssl) {
 				target->ssl = NULL;

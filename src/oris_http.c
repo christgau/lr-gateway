@@ -151,6 +151,9 @@ void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
 			uri, evbuffer_get_length(body));
 
 	for (i = 0; i < target_count; i++) {
+		if (!targets[i].enabled) {
+			continue;
+		}
 		request = evhttp_request_new(http_request_done_cb, &targets[i]);
 		if (request) {
 			/* todo: place this at a better position */

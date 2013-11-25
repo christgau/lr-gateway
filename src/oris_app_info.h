@@ -1,6 +1,8 @@
 #ifndef __ORIS_APP_INFO_H
 #define __ORIS_APP_INFO_H
 
+#include <stdbool.h>
+
 #include "oris_libevent.h"
 
 #include "oris_http.h"
