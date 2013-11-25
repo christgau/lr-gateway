@@ -49,6 +49,8 @@ static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
+static void oris_builtin_cmd_target(char* s, oris_application_info_t* info,
+	struct evbuffer* out);
 static void oris_builtin_cmd_trigger(char* s, oris_application_info_t* info,
 	struct evbuffer* out);
 static void oris_builtin_cmd_http(char* s, oris_application_info_t* info,
@@ -66,6 +68,7 @@ static oris_ctrl_cmd_t ctrl_commands[] = {
 	{ "request", "issue request to data feed provider(s)", oris_builtin_cmd_request },
 	{ "resume", "re-enable automation actions", oris_builtin_cmd_pause_resume },
 	{ "show", "show content of table (name is argument)", oris_builtin_cmd_show },
+	{ "target", "modify http target (usage: target disable|enable name)", oris_builtin_cmd_target},
 	{ "terminate", "terminate the gateway", oris_builtin_cmd_terminate },
 	{ "trigger", "trigger actions (table, command)", oris_builtin_cmd_trigger }
 };
@@ -177,6 +180,10 @@ static char* next_word(char** s)
 		}
 	}
 
+    if (*str == 0) {
+		*s = NULL;
+	}
+
 	return retval;
 }
 
@@ -257,10 +264,11 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	} else if (strcmp(object, "targets") == 0) {
 		evbuffer_add_printf(out, "%d http targets defined", (int) info->targets.count);
 		for (i = 0; i < (size_t) info->targets.count; i++) {
-			evbuffer_add_printf(out, "\r\n\t%s -> %s://%s/%s", info->targets.items[i].name, 
+			evbuffer_add_printf(out, "\r\n\t%s -> %s://%s/%s %s", info->targets.items[i].name, 
 					evhttp_uri_get_scheme(info->targets.items[i].uri),
 					evhttp_uri_get_host(info->targets.items[i].uri),
-					evhttp_uri_get_path(info->targets.items[i].uri));
+					evhttp_uri_get_path(info->targets.items[i].uri),
+					!info->targets.items[i].enabled ? " (disabled)" : "");
 		}
 	} else {
 		evbuffer_add_printf(out, "unknown objects to list: '%s'", object);
@@ -455,6 +463,47 @@ static void oris_builtin_cmd_http(char* s, oris_application_info_t* info,
 		method, uri, body);
 
 	evbuffer_free(body);
+}
+
+static void oris_builtin_cmd_target(char* s, oris_application_info_t* info,
+	struct evbuffer* out)
+{
+	int i;
+	char *op, *target_name;
+	oris_http_target_t* target = NULL;
+
+	word_end(&s);
+	op = next_word(&s);
+	target_name = next_word(&s);
+
+	if (!op) {
+		evbuffer_add_printf(out, "missing operation");
+		return;
+	}
+
+	if (strcasecmp(op, "disable") != 0 && strcasecmp(op, "enable") != 0) {
+		evbuffer_add_printf(out, "invalid operation %s", op);
+		return;
+	}
+
+	if (!target_name) {
+		evbuffer_add_printf(out, "missing target name");
+		return;
+	}
+
+	for (i = 0; i < info->targets.count; i++) {
+		if (strcasecmp(info->targets.items[i].name, target_name) == 0) {
+			target = &info->targets.items[i];
+			break;
+		}
+	}
+
+	if (!target) {
+		evbuffer_add_printf(out, "unknown target %s", target_name);
+		return;
+	}
+
+	target->enabled = strcasecmp(op, "enable") == 0;
 }
 
 #ifdef _MSC_VER
