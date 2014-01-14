@@ -45,7 +45,7 @@ connections[oris_application_info_t* info]
 	;
 
 targets[oris_application_info_t* info]
-	: ^(TARGETS (key=IDENTIFIER value=expr { 
+	: ^(TARGETS (key=IDENTIFIER value=expr {
 			char* v_str = oris_expr_as_string($value.value);
 			oris_config_add_target(info, (const char*) $key.text->chars, v_str);
 			free(v_str);
@@ -53,13 +53,13 @@ targets[oris_application_info_t* info]
 	;
 
 automation[oris_application_info_t* info, oris_automation_event_t* automation_event]
-	: ^(AUTOMATION event[info, automation_event]*) 
+	: ^(AUTOMATION event[info, automation_event]*)
 	;
 
 event[oris_application_info_t* info, oris_automation_event_t* event]
 	@init {	in_event = true; }
 	@after { in_event = false; }
-	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ACTIONLIST conditional_action[info]*) 
+	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ACTIONLIST conditional_action[info]*)
 	;
 
 object returns [oris_automation_event_t event]
@@ -77,7 +77,7 @@ action[oris_application_info_t* info]
 	@init {	in_action = true; value = NULL; it = false; tbl=NULL; }
 	@after { in_action = false; }
 	: ^(ITERATE req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_iterate_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
-	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, (const char*) $name.text->chars); }
+	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action((const char*) $name.text->chars); }
 	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
 	;
 
@@ -96,17 +96,17 @@ table_iterate returns [bool value]
 	;
 
 kv_list returns [pANTLR3_LIST list]
-	@init 
+	@init
 		{
 			list = antlr3ListNew(sizeof(*list));
 		}
-	: (key=IDENTIFIER value=expr  { 
-			$list->add($list, oris_create_kv_pair((const char*) $key.text->chars, $value.value, oris_free_expr_value_void), oris_free_kv_pair_void); 
+	: (key=IDENTIFIER value=expr  {
+			$list->add($list, oris_create_kv_pair((const char*) $key.text->chars, $value.value, oris_free_expr_value_void), oris_free_kv_pair_void);
 		} )*
 	;
 
 exprTree
-	: ^((EQUAL | NOT_EQUAL | LTH | LE | GE | GT | PLUS | MINUS | OR | MUL | DIV | MOD | AND)  exprTree exprTree) 
+	: ^((EQUAL | NOT_EQUAL | LTH | LE | GE | GT | PLUS | MINUS | OR | MUL | DIV | MOD | AND)  exprTree exprTree)
 	| ^(RECORD IDENTIFIER INTEGER)
 	| ^(RECORD IDENTIFIER IDENTIFIER)
 	| ^(FUNCTION IDENTIFIER ^(PARAMS exprTree*))
@@ -116,12 +116,12 @@ exprTree
 
 expr returns [oris_parse_expr_t* value]
 	@init { value = NULL; }
-	: ^(op=(EQUAL | NOT_EQUAL | LTH | LE | GE | GT | PLUS | MINUS | OR | MUL | DIV | MOD | AND)  a=expr b=expr) 
+	: ^(op=(EQUAL | NOT_EQUAL | LTH | LE | GE | GT | PLUS | MINUS | OR | MUL | DIV | MOD | AND)  a=expr b=expr)
 		{
 			$value = oris_expr_eval_binary_op(a, b, $op.type);
 		}
 /*
-   	: ^(op=(PLUS | MINUS) expr) 
+   	: ^(op=(PLUS | MINUS) expr)
 		{
 			$value = oris_expr_eval_unary_op($op.type, factor);
 		}
@@ -135,22 +135,22 @@ expr returns [oris_parse_expr_t* value]
 		{
 			$value = oris_alloc_value_from_rec_s($table.text, $column.text);
 		}
-	| ^(FUNCTION IDENTIFIER parameters) 
+	| ^(FUNCTION IDENTIFIER parameters)
 		{
 			$value = oris_expr_eval_function($IDENTIFIER.text, $parameters.argv);
 		}
-	| INTEGER 
+	| INTEGER
 		{
 			$value = oris_alloc_int_value_from_str($INTEGER.text);
 		}
-	| STRING 
+	| STRING
 		{
 			$value = oris_alloc_string_value($STRING.text);
 		}
 	;
 
 parameters returns [pANTLR3_LIST argv]
-	@init 
+	@init
 		{
 			argv = antlr3ListNew(sizeof(*argv));
 		}
