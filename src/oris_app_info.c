@@ -41,7 +41,6 @@ static void oris_libevent_log_cb(int severity, const char* msg)
 {
 	int sev;
 
-	puts(msg);
 	switch (severity) {
 		case _EVENT_LOG_DEBUG:
 			sev = LOG_DEBUG;
@@ -59,7 +58,7 @@ static void oris_libevent_log_cb(int severity, const char* msg)
 			sev = LOG_WARNING;
 	}
 
-	oris_logs(sev, msg);
+	oris_log_f(sev, "[libevent] %s", msg);
 }
 
 static void oris_sigint_cb(evutil_socket_t fd, short type, void *arg)
