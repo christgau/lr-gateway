@@ -2,11 +2,14 @@
 #include <string.h>
 #include <stdint.h>
 
+#include <event2/event.h>
+
 #include "oris_protocol_data.h"
 #include "oris_util.h"
 #include "oris_log.h"
 #include "oris_table.h"
 #include "oris_automation.h"
+#include "oris_connection.h"
 
 #define LINE_DELIM_START 0x02
 #define LINE_DELIM_END   0x03
@@ -17,23 +20,63 @@
 #pragma warning( disable : 4706 )
 #endif
 
-static void process_line(char* line, oris_application_info_t* info);
+typedef struct data_request {
+	char* message;
+	size_t size;
+	oris_connection_t* connection;
+	STAILQ_ENTRY(data_request) queue;
+} oris_data_request_t;
+
+static void process_line(char* line, oris_data_protocol_data_t* protocol);
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
 static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	void* connection, oris_connection_write_fn_t transfer);
 static void oris_protocol_data_free(struct oris_protocol* protocol);
+static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
+	void *arg);
+
+static STAILQ_HEAD(request_list, data_request) outstanding_requests;
+static struct event* idle_event = NULL;
+static int refcount = 0;
 
 void oris_protocol_data_init(struct oris_protocol* self)
 {
+	oris_data_protocol_data_t* data = (oris_data_protocol_data_t*) self->data;
+
 	self->write = oris_protocol_data_write;
 	self->destroy = oris_protocol_data_free;
+	data->state = IDLE;
+
+	if (!idle_event) {
+		idle_event = event_new(data->info->libevent_info.base, -1, 0,
+		oris_protocol_data_idle_event_cb, NULL);
+		STAILQ_INIT(&outstanding_requests);
+	}
+
+	refcount++;
 }
 
-static void oris_protocol_data_free(struct oris_protocol* protocol)
+static void oris_protocol_data_free(struct oris_protocol* self)
 {
-	oris_data_protocol_data_t* pdata = (oris_data_protocol_data_t*) protocol->data;
-	oris_free_and_null(pdata->buffer);
-	oris_protocol_free(protocol);
+	oris_data_protocol_data_t* data = (oris_data_protocol_data_t*) self->data;
+	oris_data_request_t* i;
+
+	if (--refcount == 0) {
+		event_del(idle_event);
+		event_free(idle_event);
+
+		/* FIXME: remove all outstanding messages for the protocol
+		 * instance to be destroyed here */
+		while (!STAILQ_EMPTY(&outstanding_requests)) {
+			i = STAILQ_FIRST(&outstanding_requests);
+			STAILQ_REMOVE_HEAD(&outstanding_requests, queue);
+			free(i->message);
+			free(i);
+	    }
+	}
+
+	oris_free_and_null(data->buffer);
+	oris_protocol_free(self);
 }
 
 void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
@@ -43,6 +86,7 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 
 	struct evbuffer* input = bufferevent_get_input(bev);
 	char *p_start, *p_end, *bufstart;
+	size_t i;
 
 	/* receive and return if nothing was recevied */
 	if (oris_protocol_recv(input, &pdata->buffer, &pdata->buf_size, &pdata->buf_capacity) == 0) {
@@ -60,7 +104,7 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 			p_end = memchr((void*) ++p_start, LINE_DELIM_END, pdata->buf_size);
 			if (p_end) {
 				*p_end = '\0';
-				process_line(p_start, pdata->info);
+				process_line(p_start, pdata);
 				pdata->buf_size -= (p_end - p_start) + 1;
 				bufstart = p_end + 1;
 			} else {
@@ -73,7 +117,7 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 
 	/* move unprocessed data to the beginning of the buffer */
 	if (pdata->buf_size > 0) {
-		memmove(bufstart, pdata->buffer, pdata->buf_size);
+		memmove(pdata->buffer, bufstart - 1, pdata->buf_size);
 	}
 }
 
@@ -108,9 +152,10 @@ static char* strdup_iso8859_to_utf8(char* line)
 	return (char*) retval;
 }
 
-static void process_line(char* line, oris_application_info_t* info)
+static void process_line(char* line, oris_data_protocol_data_t* protocol)
 {
 	oris_table_t* tbl;
+	oris_application_info_t* info = protocol->info;
 	char *s, *c, *tbl_name;
 	size_t last_char_index;
 	bool is_last_line, is_response_line;
@@ -160,6 +205,11 @@ static void process_line(char* line, oris_application_info_t* info)
 	tbl->state = (is_response_line || is_last_line) ? COMPLETE : RECEIVING;
 	if (tbl->state == COMPLETE) {
 		table_complete_cb(tbl, info);
+		if (protocol->state == WAIT_FOR_RESPONSE && strchr(tbl_name, '!') == NULL) {
+			/* reset state so we can send outstanding requests */
+			protocol->state = IDLE;
+			event_active(idle_event, EV_READ, 0);
+		}
 	}
 
 	free(s);
@@ -189,14 +239,54 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	void* connection, oris_connection_write_fn_t transfer)
 {
 	uint8_t c;
+	oris_protocol_t* protocol = ((oris_connection_t*) connection)->protocol;
+	oris_data_protocol_data_t* self = (oris_data_protocol_data_t*) protocol->data;
+	oris_data_request_t* request;
 
-	c = LINE_DELIM_START;
-	transfer(connection, &c, sizeof(c));
+	if (self->state == IDLE) {
+		oris_log_f(LOG_DEBUG, "sending data request %s", buf);
+		c = LINE_DELIM_START;
+		transfer(connection, &c, sizeof(c));
+		transfer(connection, buf, bufsize);
+		c = LINE_DELIM_END;
+		transfer(connection, &c, sizeof(c));
 
-	transfer(connection, buf, bufsize);
+		self->state = WAIT_FOR_RESPONSE;
+	} else {
+		request = calloc(1, sizeof(*request));
+		request->message = malloc(bufsize);
+		request->size = bufsize;
+		request->connection = connection;
+		memcpy(request->message, buf, bufsize);
 
-	c = LINE_DELIM_END;
-	transfer(connection, &c, sizeof(c));
+		STAILQ_INSERT_TAIL(&outstanding_requests, request, queue);
+	}
+}
+
+static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
+	void *arg)
+{
+	oris_data_request_t* request;
+
+	if (STAILQ_EMPTY(&outstanding_requests)) {
+		return;
+	}
+
+	request = STAILQ_FIRST(&outstanding_requests);
+	if (((oris_data_protocol_data_t*) request->connection->protocol->data)->state != IDLE) {
+		oris_log_f(LOG_INFO, "connection idle, waiting for next chance");
+		return;
+	}
+
+	STAILQ_REMOVE_HEAD(&outstanding_requests, queue);
+	oris_protocol_data_write(request->message, request->size, request->connection,
+		request->connection->write);
+
+	/* keep compiler happy */
+	fd = fd;
+	type = type;
+	arg = arg;
+	return;
 }
 
 #ifdef _MSC_VER

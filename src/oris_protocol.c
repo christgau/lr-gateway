@@ -65,12 +65,12 @@ oris_protocol_t* oris_get_protocol_from_scheme(const char* scheme, void *data)
 			retval = oris_simple_protocol_create(scheme,
 				oris_protocol_data_read_cb);
 			if (retval) {
-                oris_protocol_data_init(retval);
                 /* TODO: refactor this out */
 				retval->connected_cb = oris_protocol_data_connected_cb;
 				retval->data = calloc(1, sizeof(oris_data_protocol_data_t));
 				if (retval->data) {
 					((oris_data_protocol_data_t*) retval->data)->info = data;
+					oris_protocol_data_init(retval);
 				}
 			}
 		}
