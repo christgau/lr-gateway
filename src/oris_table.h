@@ -5,6 +5,9 @@
 #include <stddef.h>
 
 #define ORIS_TABLE_ITEM_SEPERATOR '|'
+#define ORIS_FOR_EACH_TBL_ROW(tbl) \
+	for ((tbl)->current_row = 0; (tbl)->current_row < (tbl)->row_count; \
+		(tbl)->current_row++)
 
 /* a row within a table */
 typedef struct oris_table_row {
