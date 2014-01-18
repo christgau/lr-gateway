@@ -37,13 +37,15 @@ static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args);
 static oris_parse_expr_t* oris_built_in_token(pANTLR3_LIST args);
 static oris_parse_expr_t* oris_built_in_lpad(pANTLR3_LIST args);
 static oris_parse_expr_t* oris_built_in_rpad(pANTLR3_LIST args);
+static oris_parse_expr_t* oris_built_in_lookup(pANTLR3_LIST args);
 
 static oris_builtin_func_t oris_builtin_funcs[] = {
 	{ "LENGTH", oris_built_in_length, 1, 0 },
 	{ "TOKEN", oris_built_in_token, 3, 0 },
 	{ "QUOTE", oris_built_in_quote, 1, 0 },
 	{ "LPAD", oris_built_in_lpad, 3, 0 },
-	{ "RPAD", oris_built_in_rpad, 3, 0 }
+	{ "RPAD", oris_built_in_rpad, 3, 0 },
+	{ "LOOKUP", oris_built_in_lookup, 4, 0}
 /*	{ "IFTHEN", NULL, 2, 1 },
 	{ "UPPERCASE", oris_built_in_uppercase, 1, 0},
 	{ "LOWERCASE", NULL, 1, 0},
@@ -57,6 +59,8 @@ static oris_table_list_t* data_tbls;
 
 bool oris_interpreter_init(oris_table_list_t* tbls)
 {
+	size_t i;
+
 	setlocale(LC_CTYPE, "");
 	strFactory = antlr3StringFactoryNew(ANTLR3_ENC_UTF8);
 	if (strFactory == NULL) {
@@ -65,6 +69,11 @@ bool oris_interpreter_init(oris_table_list_t* tbls)
 
 	oris_expr_mem_pool = create_mem_pool(sizeof(oris_parse_expr_t));
 	data_tbls = tbls;
+
+	oris_logs(LOG_DEBUG, "builtin function for automation language\n");
+	for (i = 0; i < sizeof(oris_builtin_funcs)/sizeof(*oris_builtin_funcs); i++) {
+		oris_log_f(LOG_DEBUG, " - %s", oris_builtin_funcs[i].name);
+	}
 
 	return oris_expr_mem_pool != NULL;
 }
@@ -110,13 +119,13 @@ oris_parse_expr_t* oris_alloc_string_value(const pANTLR3_STRING s)
 	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_STRING;
-		if (s->chars) {
+		if (s && s->chars) {
 			retval->value.as_string = strFactory->newStr(strFactory, s->chars);
 		} else {
 			retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) "");
 		}
 	}
-	
+
 	return retval;
 }
 
@@ -133,7 +142,7 @@ oris_parse_expr_t* oris_alloc_value_from_rec_i(const pANTLR3_STRING tbl, const i
 		retval->type = ET_STRING;
 		retval->value.as_string = strFactory->newStr(strFactory, (pANTLR3_UINT8) str);
 	}
-	
+
 	return retval;
 }
 
@@ -142,11 +151,11 @@ oris_parse_expr_t* oris_alloc_value_from_rec_s(const pANTLR3_STRING tbl, const p
 	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
 	if (retval) {
 		retval->type = ET_STRING;
-		retval->value.as_string = strFactory->newStr(strFactory,(pANTLR3_UINT8) 
-				oris_tables_get_field(data_tbls, (const char*) (tbl->chars), 
+		retval->value.as_string = strFactory->newStr(strFactory,(pANTLR3_UINT8)
+				oris_tables_get_field(data_tbls, (const char*) (tbl->chars),
 				(const char*) col->chars));
 	}
-	
+
 	return retval;
 }
 
@@ -197,8 +206,8 @@ static void oris_grammar_eval_plus(oris_parse_expr_t* a,
 		oris_expr_cast_to_str(b);
 
 		r->type = ET_STRING;
-		r->value.as_string = strFactory->newSize(strFactory, 
-				a->value.as_string->len + 
+		r->value.as_string = strFactory->newSize(strFactory,
+				a->value.as_string->len +
 				b->value.as_string->len);
 		r->value.as_string->appendS(r->value.as_string, a->value.as_string);
 		r->value.as_string->appendS(r->value.as_string, b->value.as_string);
@@ -232,7 +241,7 @@ static void oris_grammar_eval_arith_op2(int a, int b, int op, int* r)
 	}
 }
 
-static void oris_expr_eval_log_op2(oris_parse_expr_t* a, 
+static void oris_expr_eval_log_op2(oris_parse_expr_t* a,
 	oris_parse_expr_t* b, int op, oris_parse_expr_t* r)
 {
 	int ia, ib;
@@ -280,7 +289,7 @@ oris_parse_expr_t* oris_expr_eval_unary_op(oris_parse_expr_t* a, int op)
 	return a;
 }
 
-oris_parse_expr_t* oris_expr_eval_binary_op(oris_parse_expr_t* a, 
+oris_parse_expr_t* oris_expr_eval_binary_op(oris_parse_expr_t* a,
 	oris_parse_expr_t* b, int op)
 {
 	oris_parse_expr_t* retval = mem_pool_alloc(oris_expr_mem_pool);
@@ -383,7 +392,7 @@ bool oris_expr_as_bool(const oris_parse_expr_t* expr, bool* v)
 	if (oris_expr_as_int(expr, &iv)) {
 		*v = iv != 0;
 		return true;
-	} 
+	}
 
 	return false;
 }
@@ -425,7 +434,7 @@ static oris_parse_expr_t* oris_built_in_quote(pANTLR3_LIST args)
 
 	arg->value.as_string->insert(arg->value.as_string, 0, "\"");
 	arg->value.as_string->append(arg->value.as_string, "\"");
-	
+
 	return arg;
 }
 
@@ -435,7 +444,7 @@ static oris_parse_expr_t* oris_built_in_token(pANTLR3_LIST args)
 	oris_parse_expr_t* nr_arg = args->get(args, 2);
 	oris_parse_expr_t* delim_str = args->get(args, 3);
 	oris_parse_expr_t* retval = NULL;
-	int nr; 
+	int nr;
 	ANTLR3_UINT32 start, end;
 	ANTLR3_UCHAR delim;
 	pANTLR3_STRING token, str;
@@ -491,7 +500,7 @@ static oris_parse_expr_t* oris_built_in_lpad(pANTLR3_LIST args)
 			str->value.as_string->insertS(str->value.as_string, 0, fill);
 		}
 	}
-	
+
 	return str;
 }
 
@@ -515,11 +524,46 @@ static oris_parse_expr_t* oris_built_in_rpad(pANTLR3_LIST args)
 		while ((int) str->value.as_string->len < minlen) {
 			str->value.as_string->appendS(str->value.as_string, fill);
 		}
-	}	
-	
+	}
+
 	return str;
 }
 
+static oris_parse_expr_t* oris_built_in_lookup(pANTLR3_LIST args)
+{
+	oris_parse_expr_t* value = args->get(args, 1);
+	oris_parse_expr_t* tbl_name_arg = args->get(args, 2);
+	oris_parse_expr_t* tbl_field_arg = args->get(args, 3);
+	oris_parse_expr_t* lookup_field_arg = args->get(args, 4);
+	oris_parse_expr_t* retval = oris_alloc_string_value(NULL);
+	oris_table_t* tbl;
+	int row_backup, tbl_field, lookup_field;
+	const char* s;
+
+	oris_expr_cast_to_str(value);
+	oris_expr_cast_to_str(tbl_name_arg);
+
+	tbl = oris_get_table(data_tbls, (const char*) tbl_name_arg->value.as_string->chars);
+	if (!tbl || !oris_expr_as_int(tbl_field_arg, &tbl_field) ||
+			!oris_expr_as_int(lookup_field_arg, &lookup_field))  {
+		return oris_alloc_string_value(NULL);
+	}
+
+	row_backup = tbl->current_row;
+	ORIS_FOR_EACH_TBL_ROW(tbl) {
+		s = oris_table_get_field_by_index(tbl, tbl_field);
+		if (s && strcasecmp((const char*) value->value.as_string->chars, s) == 0) {
+			s = oris_table_get_field_by_index(tbl, lookup_field);
+			if (s) {
+				retval->value.as_string->append(retval->value.as_string, s);
+			}
+			break;
+		}
+	}
+	tbl->current_row = row_backup;
+
+	return retval;
+}
 
 oris_parse_expr_t* oris_expr_parse_from_tree(const pANTLR3_BASE_TREE tree)
 {
