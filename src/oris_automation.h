@@ -16,7 +16,7 @@ void oris_automation_finalize();
 void oris_automation_trigger(oris_automation_event_t* event, oris_application_info_t* info);
 
 /* implementation of the automation actions */
-void oris_automation_iterate_action(oris_application_info_t* info,
+void oris_automation_foreach_action(oris_application_info_t* info,
 	const char* request_name, const char* tbl_name);
 
 void oris_automation_request_action(oris_application_info_t* info,

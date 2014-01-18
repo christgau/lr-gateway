@@ -18,7 +18,7 @@ tokens {
     ACTIONLIST;
     FUNCTION;
     PARAMS;
-    ITERATE;
+    FOREACH;
     VALUE;
     TEMPLATES;
 	COND_ACTION;
@@ -39,9 +39,9 @@ tokens {
     REQUESTS='requests';
     REQUEST='request';
     HTTP='http';
-    
+
     COLON=':';
-    SEMICOLON=';' ; 
+    SEMICOLON=';' ;
     COMMA=',';
     DOT='.';
     BRACKET_LEFT='(';
@@ -79,12 +79,12 @@ connection_state
 
 conditional_action
 	: action
-	| 'if' expr action -> ^(COND_ACTION expr action) 
+	| 'if' expr action -> ^(COND_ACTION expr action)
 	;
 
 action
-    : HTTP^ http_method url=expr ('using'! IDENTIFIER ('for'! ('table' | ('each'! 'record' 'of'!)) IDENTIFIER)? | 'with'! 'value'! expr)? SEMICOLON! 
-    | REQUEST req=IDENTIFIER ('for' 'each' 'record' 'in') tbl=IDENTIFIER SEMICOLON -> ^(ITERATE $req $tbl)
+    : HTTP^ http_method url=expr ('using'! IDENTIFIER ('for'! ('table' | ('each'! 'record' 'of'!)) IDENTIFIER)? | 'with'! 'value'! expr)? SEMICOLON!
+    | REQUEST req=IDENTIFIER ('for' 'each' 'record' 'in') tbl=IDENTIFIER SEMICOLON -> ^(FOREACH $req $tbl)
     | REQUEST^ IDENTIFIER SEMICOLON!
     ;
 
@@ -94,7 +94,7 @@ http_method
     | 'post'
     | 'delete'
     ;
-    
+
 template_definition
     : TEMPLATE^ IDENTIFIER COLON! kv_list
     ;
@@ -106,7 +106,7 @@ requests_definition
 kv_list
     : (kv_pair)*
     ;
-    
+
 kv_pair
     : IDENTIFIER COLON! expr
     ;
@@ -128,7 +128,7 @@ signedFactor
     ;
 
 factor
-    : BRACKET_LEFT! expr BRACKET_RIGHT! 
+    : BRACKET_LEFT! expr BRACKET_RIGHT!
     | record
     | function
     | constant
@@ -140,7 +140,7 @@ record
     ;
 
 function
-    : name=IDENTIFIER BRACKET_LEFT parameters BRACKET_RIGHT -> ^(FUNCTION $name parameters) 
+    : name=IDENTIFIER BRACKET_LEFT parameters BRACKET_RIGHT -> ^(FUNCTION $name parameters)
     ;
 
 parameters
@@ -156,12 +156,12 @@ ML_COMMENT
     : '/*' (options {greedy=false;} : .)* '*/' { SKIP(); }
     ;
 
-SL_COMMENT 
+SL_COMMENT
     : '#' ~(NEWLINE)* { SKIP(); } ;
 
 INTEGER     : (DIGIT)+ ;
 IDENTIFIER  : (LETTER|UNDERSCORE)(LETTER|UNDERSCORE|DIGIT)*(EXLAM)?;
-STRING      : ('"' ~('"')* '"')  { SETTEXT(GETTEXT()->subString(GETTEXT(), 1, GETTEXT()->len-2));} 
+STRING      : ('"' ~('"')* '"')  { SETTEXT(GETTEXT()->subString(GETTEXT(), 1, GETTEXT()->len-2));}
             | ('\'' ~('\'')* '\'') { SETTEXT(GETTEXT()->subString(GETTEXT(), 1, GETTEXT()->len-2));} ;
 
 fragment DIGIT
@@ -181,9 +181,9 @@ MINUS           : '-'   ;
 MUL             : '*'   ;
 MOD             : '%'   ;
 DIV             : '/'   ;
-EQUAL           : '='   
+EQUAL           : '='
                 | '=='  ;
-NOT_EQUAL       : '<>'  
+NOT_EQUAL       : '<>'
                 | '!='  ;
 LTH             : '<'   ;
 LE              : '<='  ;

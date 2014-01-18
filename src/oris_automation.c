@@ -59,7 +59,7 @@ void oris_automation_trigger(oris_automation_event_t* event, oris_application_in
 	oris_configuration_perform_automation(event, info);
 }
 
-void oris_automation_iterate_action(oris_application_info_t* info,
+void oris_automation_foreach_action(oris_application_info_t* info,
 	const char* request_name, const char* tbl_name)
 {
 	oris_table_t* tbl = oris_get_table(&info->data_tables, tbl_name);
@@ -172,7 +172,7 @@ static void oris_parse_template(struct evbuffer* target, pANTLR3_BASE_TREE tmpl,
 	}
 }
 
-static void oris_parse_iterated_template(struct evbuffer* buf, oris_table_t* tbl,
+static void oris_parse_foreach_template(struct evbuffer* buf, oris_table_t* tbl,
 	pANTLR3_BASE_TREE template)
 {
 	char c;
@@ -238,7 +238,7 @@ static void oris_perform_http_on_table(oris_application_info_t* info,
 		tbl->current_row = l;
 	} else {
 		evbuffer_add_printf(buf, "{\"v\":[");
-		oris_parse_iterated_template(buf, tbl, tmpl);
+		oris_parse_foreach_template(buf, tbl, tmpl);
 		evbuffer_add_printf(buf, "]}");
 
 		oris_perform_http_with_buffer(info, method, url, buf);
