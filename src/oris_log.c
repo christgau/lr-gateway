@@ -96,6 +96,7 @@ void oris_logs(int severity, const char* s)
 {
 	if (logFile && severity <= logLevel) {
 		oris_log_time();
+		oris_log_severity(severity);
 		fputs(s, logFile);
 	}
 }
