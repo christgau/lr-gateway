@@ -66,7 +66,6 @@ void oris_automation_trigger(oris_automation_event_t* event, oris_application_in
 		return;
 	}
 
-	oris_log_f(LOG_INFO, "should parse %s with %d children", tree->toStringTree(tree)->chars, tree->getChildCount(tree));
 	oris_perform_automation_actions(tree, info);
 }
 
@@ -102,10 +101,7 @@ static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
 
 	row = tbl->current_row;
 	ORIS_FOR_EACH_TBL_ROW(tbl) {
-		oris_log_f(LOG_INFO, "ITERATION %d table: %s", tbl->current_row,
-				tbl->name);
 		oris_perform_automation_actions(action_tree, info);
-//		oris_log_f(LOG_INFO, "-> ACTIONS: %s", action_tree->toStringTree(action_tree)->chars);
 	}
 	tbl->current_row = row;
 
@@ -138,8 +134,8 @@ void oris_automation_foreach_action(oris_application_info_t* info,
 	char* r;
 
 	if (!tbl) {
-		oris_log_f(LOG_DEBUG, "table %s not found, not performing iterate using %s",
-				tbl_name, request_name);
+		oris_log_f(LOG_DEBUG, "table %s not found, not performing "
+				"foreach using %s",	tbl_name, request_name);
 		return;
 	}
 
