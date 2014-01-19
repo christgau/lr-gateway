@@ -73,7 +73,7 @@ operations [oris_application_info_t* info]
 	;
 
 iterate [oris_application_info_t* info]
-	: ^(ITERATE tbl_name=IDENTIFIER ^(ACTIONLIST (conditional_action[info])*))
+	: ^(ITERATE tbl_name=IDENTIFIER ^(OPERATIONS operations[info]))
 	;
 
 conditional_action [oris_application_info_t* info]

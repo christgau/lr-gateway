@@ -90,7 +90,7 @@ conditional_action
     ;
 
 iterate
-    : ITERATE IDENTIFIER COLON conditional_action* END SEMICOLON -> ^(ITERATE IDENTIFIER ACTIONLIST (conditional_action)*)
+    : ITERATE IDENTIFIER COLON conditional_action* END SEMICOLON -> ^(ITERATE IDENTIFIER ^(OPERATIONS (conditional_action)*))
     ;
 
 action

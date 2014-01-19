@@ -17,6 +17,8 @@ static void oris_perform_automation_actions(pANTLR3_BASE_TREE tree,
 	oris_application_info_t* info);
 static void oris_perform_automation_action(pANTLR3_BASE_TREE tree,
 	oris_application_info_t* info);
+static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
+	oris_application_info_t* info);
 
 bool oris_automation_init(oris_application_info_t* app_info)
 {
@@ -77,11 +79,36 @@ static void oris_perform_automation_actions(pANTLR3_BASE_TREE tree,
 	for (i = 0; i < tree->getChildCount(tree); i++) {
 		child = tree->getChild(tree, i);
 		if (child->getType(child) == ITERATE) {
-			oris_log_f(LOG_INFO, "should ITERATE but cannot do that");
+			oris_perform_automation_iterate(child, info);
 		} else {
 			oris_perform_automation_action(child, info);
 		}
 	}
+}
+
+static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
+	oris_application_info_t* info)
+{
+	pANTLR3_BASE_TREE name_node = tree->getChild(tree, 0);
+	pANTLR3_BASE_TREE action_tree = tree->getChild(tree, 1);
+	oris_table_t* tbl;
+	int row;
+
+	if (!name_node || !action_tree || !(tbl = oris_get_table(&info->data_tables,
+			(const char*) name_node->getText(name_node)->chars))) {
+
+		return;
+	}
+
+	row = tbl->current_row;
+	ORIS_FOR_EACH_TBL_ROW(tbl) {
+		oris_log_f(LOG_INFO, "ITERATION %d table: %s", tbl->current_row,
+				tbl->name);
+		oris_perform_automation_actions(action_tree, info);
+//		oris_log_f(LOG_INFO, "-> ACTIONS: %s", action_tree->toStringTree(action_tree)->chars);
+	}
+	tbl->current_row = row;
+
 }
 
 static void oris_perform_automation_action(pANTLR3_BASE_TREE tree,
