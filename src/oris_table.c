@@ -208,12 +208,12 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 		return NULL;
 	}
 
-	if (pos_cache < tbl_list->count && strcmp(tbl_list->tables[pos_cache].name, name) == 0) {
+	if (pos_cache < tbl_list->count && strcasecmp(tbl_list->tables[pos_cache].name, name) == 0) {
 		return &(tbl_list->tables[pos_cache]);
 	}
 
 	for (i = 0; i < tbl_list->count; i++) {
-		if (strcmp(tbl_list->tables[i].name, name) == 0) {
+		if (strcasecmp(tbl_list->tables[i].name, name) == 0) {
 			pos_cache = i;
 			return &(tbl_list->tables[i]);
 		}
