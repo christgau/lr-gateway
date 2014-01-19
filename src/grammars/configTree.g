@@ -59,7 +59,7 @@ automation[oris_application_info_t* info, oris_automation_event_t* automation_ev
 event[oris_application_info_t* info, oris_automation_event_t* event]
 	@init {	in_event = true; }
 	@after { in_event = false; }
-	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } OPERATIONS operations[info])
+	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ^(OPERATIONS operations[info]))
 	;
 
 object returns [oris_automation_event_t event]
@@ -73,7 +73,7 @@ operations [oris_application_info_t* info]
 	;
 
 iterate [oris_application_info_t* info]
-	: ^(ITERATE tbl_name=IDENTIFIER ACTIONLIST (conditional_action[info])*)
+	: ^(ITERATE tbl_name=IDENTIFIER ^(ACTIONLIST (conditional_action[info])*))
 	;
 
 conditional_action [oris_application_info_t* info]

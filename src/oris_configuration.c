@@ -30,6 +30,12 @@ const char* ORIS_GW_CFG_DEFAULT_FILENAME = "automation.script";
 #define MAX_PATH 256
 #endif /* MAX_PATH */
 
+typedef struct {
+	oris_automation_event_t event;
+	pANTLR3_BASE_TREE tree;
+	pANTLR3_COMMON_TREE_NODE_STREAM node_stream;
+} oris_automation_action_t;
+
 void oris_get_config_filename(char* buffer, size_t bufsize)
 {
 #ifdef _WIN32
@@ -53,8 +59,12 @@ void oris_get_config_filename(char* buffer, size_t bufsize)
 
 static pANTLR3_BASE_TREE get_subtree_by_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type);
 static pANTLR3_LIST get_nodes_of_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type, pANTLR3_LIST result);
+static void collect_automation_nodes(pANTLR3_BASE_TREE root_tree);
 
-struct {
+static size_t automation_events_count;
+static oris_automation_action_t* automation_events;
+
+static struct {
 	pANTLR3_INPUT_STREAM input;
 	pconfigLexer lexer;
 	pconfigParser parser;
@@ -69,7 +79,7 @@ struct {
 bool oris_load_configuration(oris_application_info_t* info)
 {
 	char fname[MAX_PATH];
-	pANTLR3_BASE_TREE configTree, templates_tree;
+	pANTLR3_BASE_TREE configTree, tree;
 	pconfigTree walker;
 
 	memset(fname, 0, sizeof(fname));
@@ -112,9 +122,9 @@ bool oris_load_configuration(oris_application_info_t* info)
 	parsing_state.automationTree = get_subtree_by_type(parsing_state.parseTree.tree, AUTOMATION);
 
     parsing_state.templates = antlr3ListNew(32); /* we expect no more than 32 templates */
-    templates_tree = get_subtree_by_type(parsing_state.parseTree.tree, TEMPLATES);
-    if (templates_tree) {
-        parsing_state.templates = get_nodes_of_type(templates_tree, TEMPLATE, parsing_state.templates);
+    tree = get_subtree_by_type(parsing_state.parseTree.tree, TEMPLATES);
+    if (tree) {
+        parsing_state.templates = get_nodes_of_type(tree, TEMPLATE, parsing_state.templates);
     }
 
 	/* create tree parser for configuration */
@@ -129,6 +139,9 @@ bool oris_load_configuration(oris_application_info_t* info)
 	parsing_state.node_stream->free(parsing_state.node_stream);
 	parsing_state.node_stream = antlr3CommonTreeNodeStreamNewTree(parsing_state.automationTree, ANTLR3_SIZE_HINT);
 
+	automation_events = NULL;
+	collect_automation_nodes(parsing_state.automationTree);
+
 	return true;
 }
 
@@ -139,6 +152,8 @@ void oris_configuration_init(void)
 
 void oris_configuration_finalize(void)
 {
+	size_t i;
+
 	parsing_state.node_stream->free(parsing_state.node_stream);
 
 	parsing_state.input->close(parsing_state.input);
@@ -146,6 +161,14 @@ void oris_configuration_finalize(void)
 	parsing_state.token_stream->free(parsing_state.token_stream); /* ! */
 	parsing_state.parser->free(parsing_state.parser);
     parsing_state.templates->free(parsing_state.templates);
+
+	if (automation_events) {
+		for (i = 0; i < automation_events_count; i++) {
+//			automation_events[i].tree->free(automation_events[i].tree);
+			automation_events[i].node_stream->free(automation_events[i].node_stream);
+		}
+		free(automation_events);
+	}
 }
 
 static pANTLR3_BASE_TREE get_subtree_by_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type)
@@ -197,17 +220,6 @@ static pANTLR3_LIST get_nodes_of_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type
     return result;
 }
 
-void oris_configuration_perform_automation(oris_automation_event_t* event,
-	oris_application_info_t* info)
-{
-	pconfigTree walker;
-
-	walker = configTreeNew(parsing_state.node_stream);
-	walker->automation(walker, (oris_application_info_t*) info, event);
-
-	walker->free(walker);
-}
-
 pANTLR3_BASE_TREE oris_get_request_parse_tree(const char *name)
 {
     ANTLR3_UINT32 i, child_count;
@@ -250,3 +262,59 @@ pANTLR3_BASE_TREE oris_get_template_by_name(pANTLR3_STRING name)
     oris_log_f(LOG_WARNING, "template %s does not exist", name->chars);
 	return NULL;
 }
+
+static oris_automation_event_t parse_automation_object_node(pANTLR3_BASE_TREE object)
+{
+	pANTLR3_COMMON_TREE_NODE_STREAM node_stream;
+	pconfigTree walker;
+	oris_automation_event_t retval;
+
+	node_stream = antlr3CommonTreeNodeStreamNewTree(object, ANTLR3_SIZE_HINT);
+	walker = configTreeNew(node_stream);
+
+	retval = walker->object(walker);
+
+	node_stream->free(node_stream);
+	walker->free(walker);
+
+	return retval;
+}
+
+static void collect_automation_nodes(pANTLR3_BASE_TREE root_tree)
+{
+    pANTLR3_BASE_TREE event, object;
+	ANTLR3_UINT32 i;
+
+    automation_events_count = root_tree->getChildCount(root_tree);
+	automation_events = calloc(automation_events_count, sizeof(*automation_events));
+    for (i = 0; i < automation_events_count; i++) {
+		event = root_tree->getChild(root_tree, i);
+		/* we rely on the parse tree to look like: (EVENT (object) OPERATIONS (...)) */
+		if (event->getChildCount(event) == 0) continue;
+
+		object = event->getChild(event, 0);
+		automation_events[i].event = parse_automation_object_node(object);
+		automation_events[i].tree = event->getChild(event, 1);
+		automation_events[i].node_stream = antlr3CommonTreeNodeStreamNewTree(
+			automation_events[i].tree, ANTLR3_SIZE_HINT);
+	}
+}
+
+bool oris_get_automation_parse_tree(oris_automation_event_t ev,
+	pANTLR3_BASE_TREE* tree, pANTLR3_COMMON_TREE_NODE_STREAM* stream)
+{
+	size_t i;
+
+	for (i = 0; i < automation_events_count; i++) {
+		if (oris_is_same_automation_event(&automation_events[i].event, &ev)) {
+			*tree = automation_events[i].tree;
+			*stream = automation_events[i].node_stream;
+			return true;
+		}
+	}
+
+	*stream = NULL;
+	*tree = NULL;
+	return false;
+}
+

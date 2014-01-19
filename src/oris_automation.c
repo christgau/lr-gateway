@@ -13,6 +13,11 @@
 static char* oris_parse_request_tree(const pANTLR3_BASE_TREE parse_tree);
 static char* oris_get_parsed_request(const char *name);
 
+static void oris_perform_automation_actions(pANTLR3_BASE_TREE tree,
+	oris_application_info_t* info);
+static void oris_perform_automation_action(pANTLR3_BASE_TREE tree,
+	oris_application_info_t* info);
+
 bool oris_automation_init(oris_application_info_t* app_info)
 {
 	app_info = app_info;
@@ -52,11 +57,49 @@ void oris_free_automation_event(oris_automation_event_t* event)
 
 void oris_automation_trigger(oris_automation_event_t* event, oris_application_info_t *info)
 {
-	if (!event || !event->name) {
+	pANTLR3_BASE_TREE tree;
+	pANTLR3_COMMON_TREE_NODE_STREAM stream;
+
+	if (!event || !event->name || !oris_get_automation_parse_tree(*event, &tree, &stream)) {
 		return;
 	}
 
-	oris_configuration_perform_automation(event, info);
+	oris_log_f(LOG_INFO, "should parse %s with %d children", tree->toStringTree(tree)->chars, tree->getChildCount(tree));
+	oris_perform_automation_actions(tree, info);
+}
+
+static void oris_perform_automation_actions(pANTLR3_BASE_TREE tree,
+	oris_application_info_t* info)
+{
+	ANTLR3_UINT32 i;
+	pANTLR3_BASE_TREE child;
+
+	for (i = 0; i < tree->getChildCount(tree); i++) {
+		child = tree->getChild(tree, i);
+		if (child->getType(child) == ITERATE) {
+			oris_log_f(LOG_INFO, "should ITERATE but cannot do that");
+		} else {
+			oris_perform_automation_action(child, info);
+		}
+	}
+}
+
+static void oris_perform_automation_action(pANTLR3_BASE_TREE tree,
+	oris_application_info_t* info)
+{
+	pANTLR3_COMMON_TREE_NODE_STREAM stream;
+	pconfigTree walker;
+
+    stream = antlr3CommonTreeNodeStreamNewTree(tree, ANTLR3_SIZE_HINT);
+    walker = configTreeNew(stream);
+
+	oris_log_f(LOG_INFO, "PERFORM: %s", tree->toStringTree(tree)->chars);
+	walker->conditional_action(walker, info);
+
+    stream->free(stream);
+    walker->free(walker);
+
+	return;
 }
 
 void oris_automation_foreach_action(oris_application_info_t* info,

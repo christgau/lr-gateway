@@ -66,7 +66,7 @@ targets
     ;
 
 event
-    : ON object COLON operations -> ^(EVENT object OPERATIONS operations)
+    : ON object COLON operations -> ^(EVENT object ^(OPERATIONS operations))
     ;
 
 object
