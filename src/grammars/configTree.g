@@ -28,7 +28,7 @@ options {
 	bool in_configuration = false;
 }
 
-@synpredgate { BACKTRACKING == 0 && (in_configuration || (in_event && !in_action) || (in_action && do_action)) }
+// @synpredgate { BACKTRACKING == 0 && (in_configuration || (in_event && !in_action) || (in_action && do_action)) }
 
 configuration[oris_application_info_t* value]
 	@init {
@@ -59,13 +59,21 @@ automation[oris_application_info_t* info, oris_automation_event_t* automation_ev
 event[oris_application_info_t* info, oris_automation_event_t* event]
 	@init {	in_event = true; }
 	@after { in_event = false; }
-	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ACTIONLIST conditional_action[info]*)
+	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } OPERATIONS operations[info])
 	;
 
 object returns [oris_automation_event_t event]
 	: ^(CONNECTION state=(ESTABLISHED|CLOSED)) { oris_init_automation_event(&event, EVT_CONNECTION, (const char*) $state.text->chars); }
 	| ^(TABLE name=IDENTIFIER) { oris_init_automation_event(&event, EVT_TABLE, (const char*) $name.text->chars); }
 	| ^(COMMAND cmd=STRING) { oris_init_automation_event(&event, EVT_COMMAND, (const char*) $cmd.text->chars); }
+	;
+
+operations [oris_application_info_t* info]
+	: (iterate[info] | conditional_action[info])*
+	;
+
+iterate [oris_application_info_t* info]
+	: ^(ITERATE tbl_name=IDENTIFIER ACTIONLIST (conditional_action[info])*)
 	;
 
 conditional_action [oris_application_info_t* info]
@@ -78,7 +86,7 @@ action[oris_application_info_t* info]
 	@after { in_action = false; }
 	: ^(FOREACH req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_foreach_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, (const char*) $name.text->chars); }
-	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=table_iterate tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
+	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=is_record tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
 	;
 
 http_method returns [enum evhttp_cmd_type http_method]
@@ -89,7 +97,7 @@ http_method returns [enum evhttp_cmd_type http_method]
 	| 'delete' { $http_method = EVHTTP_REQ_DELETE; }
 	;
 
-table_iterate returns [bool value]
+is_record returns [bool value]
 	@init { value = false; }
 	: 'table' { $value = false; }
 	| 'record' { $value = true; }
