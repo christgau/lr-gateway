@@ -46,6 +46,7 @@ void oris_protocol_data_init(struct oris_protocol* self)
 	self->write = oris_protocol_data_write;
 	self->destroy = oris_protocol_data_free;
 	data->state = IDLE;
+	data->last_req_tbl_name = NULL;
 
 	if (!idle_event) {
 		idle_event = event_new(data->info->libevent_info.base, -1, 0,
@@ -75,6 +76,7 @@ static void oris_protocol_data_free(struct oris_protocol* self)
 	    }
 	}
 
+	oris_free_and_null(data->last_req_tbl_name);
 	oris_free_and_null(data->buffer);
 	oris_protocol_free(self);
 }
@@ -86,7 +88,6 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 
 	struct evbuffer* input = bufferevent_get_input(bev);
 	char *p_start, *p_end, *bufstart;
-	size_t i;
 
 	/* receive and return if nothing was recevied */
 	if (oris_protocol_recv(input, &pdata->buffer, &pdata->buf_size, &pdata->buf_capacity) == 0) {
@@ -205,7 +206,8 @@ static void process_line(char* line, oris_data_protocol_data_t* protocol)
 	tbl->state = (is_response_line || is_last_line) ? COMPLETE : RECEIVING;
 	if (tbl->state == COMPLETE) {
 		table_complete_cb(tbl, info);
-		if (protocol->state == WAIT_FOR_RESPONSE && strchr(tbl_name, '!') == NULL) {
+		if (protocol->state == WAIT_FOR_RESPONSE && strcmp(tbl_name,
+				protocol->last_req_tbl_name) == 0) {
 			/* reset state so we can send outstanding requests */
 			protocol->state = IDLE;
 			event_active(idle_event, EV_READ, 0);
@@ -239,6 +241,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	void* connection, oris_connection_write_fn_t transfer)
 {
 	uint8_t c;
+	char *s;
 	oris_protocol_t* protocol = ((oris_connection_t*) connection)->protocol;
 	oris_data_protocol_data_t* self = (oris_data_protocol_data_t*) protocol->data;
 	oris_data_request_t* request;
@@ -251,7 +254,23 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 		c = LINE_DELIM_END;
 		transfer(connection, &c, sizeof(c));
 
-		self->state = WAIT_FOR_RESPONSE;
+		/* extract requested table name if any */
+		if (bufsize > 0) {
+			s = (char*) buf;
+			if (*s++ == '?') {
+				s = strndup((const char*) s, bufsize - 1);
+				if (s) {
+					self->state = WAIT_FOR_RESPONSE;
+					self->last_req_tbl_name = s;
+					while (*s++) {
+						if (*s == ORIS_TABLE_ITEM_SEPERATOR) {
+							*s = 0;
+							break;
+						}
+					}
+				}
+			}
+		}
 	} else {
 		request = calloc(1, sizeof(*request));
 		request->message = malloc(bufsize);

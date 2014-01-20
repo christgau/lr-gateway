@@ -14,6 +14,7 @@ typedef struct oris_data_protocol_data {
 	size_t buf_size;
 	size_t buf_capacity;
 	enum { IDLE, WAIT_FOR_RESPONSE } state;
+	char* last_req_tbl_name;
 } oris_data_protocol_data_t;
 
 void oris_protocol_data_init(struct oris_protocol* self);
