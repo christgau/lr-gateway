@@ -277,6 +277,28 @@ static void oris_expr_eval_log_op2(oris_parse_expr_t* a,
 		oris_expr_cast_to_str(a);
 		oris_expr_cast_to_str(b);
 		*ir = a->value.as_string->compareS(a->value.as_string, b->value.as_string);
+		switch (op) {
+			case EQUAL:
+				*ir = *ir == 0;
+				break;
+			case NOT_EQUAL:
+				*ir = *ir != 0;
+				break;
+			case LTH:
+				*ir = *ir < 0;
+				break;
+			case LE:
+				*ir = *ir <= 0;
+				break;
+			case GE:
+				*ir = *ir >= 0;
+				break;
+			case GT:
+				*ir = *ir > 0;
+				break;
+			default:
+				break;
+		}
 	}
 }
 
