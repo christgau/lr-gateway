@@ -90,12 +90,18 @@ static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
 {
 	pANTLR3_BASE_TREE name_node = tree->getChild(tree, 0);
 	pANTLR3_BASE_TREE action_tree = tree->getChild(tree, 1);
+	pANTLR3_BASE_TREE cond_expr_tree = tree->getChild(tree, 2);
 	oris_table_t* tbl;
 	int row;
 
 	if (!name_node || !action_tree || !(tbl = oris_get_table(&info->data_tables,
 			(const char*) name_node->getText(name_node)->chars))) {
 
+		return;
+	}
+
+	if (cond_expr_tree && !oris_expr_as_bool_and_free(
+			oris_expr_parse_from_tree(cond_expr_tree))) {
 		return;
 	}
 
@@ -116,7 +122,6 @@ static void oris_perform_automation_action(pANTLR3_BASE_TREE tree,
     stream = antlr3CommonTreeNodeStreamNewTree(tree, ANTLR3_SIZE_HINT);
     walker = configTreeNew(stream);
 
-	oris_log_f(LOG_INFO, "PERFORM: %s", tree->toStringTree(tree)->chars);
 	walker->conditional_action(walker, info);
 
     stream->free(stream);

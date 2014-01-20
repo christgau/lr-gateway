@@ -86,7 +86,12 @@ operations
 
 conditional_action
     : action
-    | 'if' expr action -> ^(COND_ACTION expr action)
+    | 'if' expr
+	(
+		action-> ^(COND_ACTION expr action)
+		|
+		ITERATE IDENTIFIER COLON conditional_action* END SEMICOLON -> ^(ITERATE IDENTIFIER ^(OPERATIONS (conditional_action)*) expr)
+	)
     ;
 
 iterate
@@ -97,7 +102,6 @@ action
     : HTTP^ http_method url=expr ('using'! IDENTIFIER ('for'! ('table' | ('each'! 'record' 'of'!)) IDENTIFIER)? | 'with'! 'value'! expr)? SEMICOLON!
     | REQUEST req=IDENTIFIER ('for' 'each' 'record' 'in') tbl=IDENTIFIER SEMICOLON -> ^(FOREACH $req $tbl)
     | REQUEST^ IDENTIFIER SEMICOLON!
-    | ITERATE^ IDENTIFIER SEMICOLON!
     ;
 
 http_method

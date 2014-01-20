@@ -57,8 +57,6 @@ automation[oris_application_info_t* info, oris_automation_event_t* automation_ev
 	;
 
 event[oris_application_info_t* info, oris_automation_event_t* event]
-	@init {	in_event = true; }
-	@after { in_event = false; }
 	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ^(OPERATIONS operations[info]))
 	;
 
@@ -73,7 +71,7 @@ operations [oris_application_info_t* info]
 	;
 
 iterate [oris_application_info_t* info]
-	: ^(ITERATE tbl_name=IDENTIFIER ^(OPERATIONS operations[info]))
+	: ^(ITERATE tbl_name=IDENTIFIER ^(OPERATIONS operations[info]) expr?)
 	;
 
 conditional_action [oris_application_info_t* info]
@@ -82,8 +80,7 @@ conditional_action [oris_application_info_t* info]
 	;
 
 action[oris_application_info_t* info]
-	@init {	in_action = true; value = NULL; it = false; tbl=NULL; }
-	@after { in_action = false; }
+	@init {	value = NULL; it = false; tbl=NULL; }
 	: ^(FOREACH req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_foreach_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, (const char*) $name.text->chars); }
 	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=is_record tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
@@ -104,10 +101,7 @@ is_record returns [bool value]
 	;
 
 kv_list returns [pANTLR3_LIST list]
-	@init
-		{
-			list = antlr3ListNew(sizeof(*list));
-		}
+	@init {	list = antlr3ListNew(sizeof(*list)); }
 	: (key=IDENTIFIER value=expr  {
 			$list->add($list, oris_create_kv_pair((const char*) $key.text->chars, $value.value, oris_free_expr_value_void), oris_free_kv_pair_void);
 		} )*
@@ -158,10 +152,7 @@ expr returns [oris_parse_expr_t* value]
 	;
 
 parameters returns [pANTLR3_LIST argv]
-	@init
-		{
-			argv = antlr3ListNew(sizeof(*argv));
-		}
+	@init {	argv = antlr3ListNew(sizeof(*argv)); }
 	: ^(PARAMS ( param=expr { $argv->add($argv, $param.value, oris_free_expr_value_void); } )* )
 	;
 

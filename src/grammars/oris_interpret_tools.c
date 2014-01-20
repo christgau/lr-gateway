@@ -571,6 +571,10 @@ oris_parse_expr_t* oris_expr_parse_from_tree(const pANTLR3_BASE_TREE tree)
 	pconfigTree walker;
     oris_parse_expr_t* expr;
 
+	if (!tree) {
+		return NULL;
+	}
+
     node_stream = antlr3CommonTreeNodeStreamNewTree(tree, ANTLR3_SIZE_HINT);
 	if (node_stream == NULL) {
 		return NULL;
