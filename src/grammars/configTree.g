@@ -75,15 +75,16 @@ iterate [oris_application_info_t* info]
 	;
 
 conditional_action [oris_application_info_t* info]
+	@init { do_action = true; }
 	: action[info]
 	| ^(COND_ACTION cond=expr{ do_action = do_action && oris_expr_as_bool_and_free(cond); } action[info])
 	;
 
 action[oris_application_info_t* info]
 	@init {	value = NULL; it = false; tbl=NULL; }
-	: ^(FOREACH req=IDENTIFIER tbl=IDENTIFIER) { oris_automation_foreach_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
-	| ^(REQUEST name=IDENTIFIER) { oris_automation_request_action(info, (const char*) $name.text->chars); }
-	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=is_record tbl=IDENTIFIER)? | value=expr )? ) { oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
+	: ^(FOREACH req=IDENTIFIER tbl=IDENTIFIER) { if (do_action) oris_automation_foreach_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
+	| ^(REQUEST name=IDENTIFIER) { if (do_action) oris_automation_request_action(info, (const char*) $name.text->chars); }
+	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=is_record tbl=IDENTIFIER)? | value=expr )? ) { if (do_action) oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
 	;
 
 http_method returns [enum evhttp_cmd_type http_method]
