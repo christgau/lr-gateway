@@ -11,7 +11,6 @@
 typedef struct data_request {
 	char* message;
 	size_t size;
-	oris_connection_t* connection;
 	STAILQ_ENTRY(data_request) queue;
 } oris_data_request_t;
 
