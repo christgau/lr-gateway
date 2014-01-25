@@ -8,6 +8,13 @@
 #include "oris_app_info.h"
 #include "oris_protocol.h"
 
+typedef struct data_request {
+	char* message;
+	size_t size;
+	oris_connection_t* connection;
+	STAILQ_ENTRY(data_request) queue;
+} oris_data_request_t;
+
 typedef struct oris_data_protocol_data {
 	oris_application_info_t* info;
 	char* buffer;
@@ -15,6 +22,8 @@ typedef struct oris_data_protocol_data {
 	size_t buf_capacity;
 	enum { IDLE, WAIT_FOR_RESPONSE } state;
 	char* last_req_tbl_name;
+	struct event* idle_event;
+	STAILQ_HEAD(request_list, data_request) outstanding_requests;
 } oris_data_protocol_data_t;
 
 void oris_protocol_data_init(struct oris_protocol* self);

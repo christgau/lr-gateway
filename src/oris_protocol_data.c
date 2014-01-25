@@ -20,13 +20,6 @@
 #pragma warning( disable : 4706 )
 #endif
 
-typedef struct data_request {
-	char* message;
-	size_t size;
-	oris_connection_t* connection;
-	STAILQ_ENTRY(data_request) queue;
-} oris_data_request_t;
-
 static void process_line(char* line, oris_data_protocol_data_t* protocol);
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
 static void oris_protocol_data_write(const void* buf, size_t bufsize,
@@ -34,10 +27,6 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 static void oris_protocol_data_free(struct oris_protocol* protocol);
 static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
 	void *arg);
-
-static STAILQ_HEAD(request_list, data_request) outstanding_requests;
-static struct event* idle_event = NULL;
-static int refcount = 0;
 
 void oris_protocol_data_init(struct oris_protocol* self)
 {
@@ -47,14 +36,10 @@ void oris_protocol_data_init(struct oris_protocol* self)
 	self->destroy = oris_protocol_data_free;
 	data->state = IDLE;
 	data->last_req_tbl_name = NULL;
+	data->idle_event = event_new(data->info->libevent_info.base, -1, 0,
+		oris_protocol_data_idle_event_cb, data);
 
-	if (!idle_event) {
-		idle_event = event_new(data->info->libevent_info.base, -1, 0,
-		oris_protocol_data_idle_event_cb, NULL);
-		STAILQ_INIT(&outstanding_requests);
-	}
-
-	refcount++;
+	STAILQ_INIT(&data->outstanding_requests);
 }
 
 static void oris_protocol_data_free(struct oris_protocol* self)
@@ -62,19 +47,15 @@ static void oris_protocol_data_free(struct oris_protocol* self)
 	oris_data_protocol_data_t* data = (oris_data_protocol_data_t*) self->data;
 	oris_data_request_t* i;
 
-	if (--refcount == 0) {
-		event_del(idle_event);
-		event_free(idle_event);
+	event_del(data->idle_event);
+	event_free(data->idle_event);
 
-		/* FIXME: remove all outstanding messages for the protocol
-		 * instance to be destroyed here */
-		while (!STAILQ_EMPTY(&outstanding_requests)) {
-			i = STAILQ_FIRST(&outstanding_requests);
-			STAILQ_REMOVE_HEAD(&outstanding_requests, queue);
-			free(i->message);
-			free(i);
-	    }
-	}
+	while (!STAILQ_EMPTY(&data->outstanding_requests)) {
+		i = STAILQ_FIRST(&data->outstanding_requests);
+		STAILQ_REMOVE_HEAD(&data->outstanding_requests, queue);
+		free(i->message);
+		free(i);
+    }
 
 	oris_free_and_null(data->last_req_tbl_name);
 	oris_free_and_null(data->buffer);
@@ -209,8 +190,9 @@ static void process_line(char* line, oris_data_protocol_data_t* protocol)
 		if (protocol->state == WAIT_FOR_RESPONSE && strcmp(tbl_name,
 				protocol->last_req_tbl_name) == 0) {
 			/* reset state so we can send outstanding requests */
+			oris_log_f(LOG_DEBUG, "received %s, state is idle now, trigger event", tbl_name);
 			protocol->state = IDLE;
-			event_active(idle_event, EV_READ, 0);
+			event_active(protocol->idle_event, EV_READ, 0);
 		}
 	}
 
@@ -278,7 +260,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 		request->connection = connection;
 		memcpy(request->message, buf, bufsize);
 
-		STAILQ_INSERT_TAIL(&outstanding_requests, request, queue);
+		STAILQ_INSERT_TAIL(&self->outstanding_requests, request, queue);
 	}
 }
 
@@ -286,25 +268,25 @@ static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
 	void *arg)
 {
 	oris_data_request_t* request;
+	oris_data_protocol_data_t* self = (oris_data_protocol_data_t*) arg;
 
-	if (STAILQ_EMPTY(&outstanding_requests)) {
+	if (STAILQ_EMPTY(&self->outstanding_requests)) {
 		return;
 	}
 
-	request = STAILQ_FIRST(&outstanding_requests);
-	if (((oris_data_protocol_data_t*) request->connection->protocol->data)->state != IDLE) {
-		oris_log_f(LOG_INFO, "connection idle, waiting for next chance");
+	request = STAILQ_FIRST(&self->outstanding_requests);
+	if (self->state != IDLE) {
+		oris_log_f(LOG_INFO, "connection not idle, waiting for next chance");
 		return;
 	}
 
-	STAILQ_REMOVE_HEAD(&outstanding_requests, queue);
+	STAILQ_REMOVE_HEAD(&self->outstanding_requests, queue);
 	oris_protocol_data_write(request->message, request->size, request->connection,
 		request->connection->write);
 
 	/* keep compiler happy */
 	fd = fd;
 	type = type;
-	arg = arg;
 	return;
 }
 
