@@ -40,7 +40,7 @@ int oris_main_default(oris_application_info_t *info)
 	oris_app_info_finalize(info);
 
 #if LIBEVENT_VERSION_NUMBER >= 0x02010100
-	oris_log_f(LOG_INFO, "LibEvent global shutdown.");
+	oris_log_f(LOG_DEBUG, "LibEvent global shutdown.");
 	libevent_global_shutdown();
 #endif
 
