@@ -22,7 +22,7 @@
 
 #define ORIS_CTRL_PROMPT "\x1b[1moris>\x1b[0m "
 
-typedef void (*oris_cmd_fn_t) (char* s, oris_application_info_t* info, 
+typedef void (*oris_cmd_fn_t) (char* s, oris_application_info_t* info,
 		struct evbuffer* out);
 
 typedef struct {
@@ -91,7 +91,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 	oris_connection_t* con = ctx;
 	oris_ctrl_protocol_data_t* pdata = (oris_ctrl_protocol_data_t*) con->protocol->data;
 
-	struct evbuffer* input, *output; 
+	struct evbuffer* input, *output;
 	char* line, *cmd;
 	size_t n;
 	bool close = false;
@@ -108,7 +108,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 			if (evbuffer_get_length(output) > 0) {
 				evbuffer_add_printf(output, "\r\n");
 			}
-		} 
+		}
 
 		if (close) {
 			evbuffer_add_printf(output, "Bye!\n");
@@ -129,7 +129,7 @@ void oris_protocol_ctrl_read_cb(struct bufferevent *bev, void *ctx)
 	}
 }
 
-static void process_command(const char* cmd, oris_application_info_t* info, 
+static void process_command(const char* cmd, oris_application_info_t* info,
 	struct evbuffer* output)
 {
 	size_t i;
@@ -141,7 +141,7 @@ static void process_command(const char* cmd, oris_application_info_t* info,
 			return;
 		}
 	}
-	
+
 	oris_log_f(LOG_ERR, "unknown remote command '%s'", cmd);
 	evbuffer_add_printf(output, "unknown command %s", cmd);
 }
@@ -153,7 +153,7 @@ static void word_end(char** s)
 	char* str;
 
 	for (str = *s; *str && !isblank(*str); str++);
-	
+
 	*s = *str ? str : NULL;
 }
 
@@ -190,9 +190,9 @@ static char* next_word(char** s)
 static void oris_builtin_cmd_terminate(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
-	oris_log_f(LOG_INFO, "terminating external command (%s)", s);
+	oris_log_f(LOG_INFO, "terminating by external command (%s)", s);
 	evbuffer_add_printf(out, "terminating");
-	event_base_loopbreak(info->libevent_info.base);	
+	event_base_loopbreak(info->libevent_info.base);
 }
 
 static void oris_builtin_cmd_pause_resume(char* s, oris_application_info_t* info,
@@ -222,7 +222,7 @@ static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
 {
 	size_t i;
 	for (i = 0; i < sizeof(ctrl_commands) / sizeof(*ctrl_commands); i++) {
-		evbuffer_add_printf(out, "%s: %s\r\n", ctrl_commands[i].fn, 
+		evbuffer_add_printf(out, "%s: %s\r\n", ctrl_commands[i].fn,
 				ctrl_commands[i].help);
 	}
 
@@ -235,7 +235,7 @@ static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 {
 	char *fn;
 	word_end(&s);
-	
+
 	fn = next_word(&s);
 	if (oris_tables_dump_to_file(&info->data_tables, fn ? fn : info->dump_fn)) {
 		evbuffer_add_printf(out, "tables dumped to %s", fn ? fn : info->dump_fn);
@@ -248,7 +248,7 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
 	char* object;
-	size_t i; 
+	size_t i;
 
 	word_end(&s);
 	object = next_word(&s);
@@ -264,7 +264,7 @@ static void oris_builtin_cmd_list(char* s, oris_application_info_t* info,
 	} else if (strcmp(object, "targets") == 0) {
 		evbuffer_add_printf(out, "%d http targets defined", (int) info->targets.count);
 		for (i = 0; i < (size_t) info->targets.count; i++) {
-			evbuffer_add_printf(out, "\r\n\t%s -> %s://%s/%s %s", info->targets.items[i].name, 
+			evbuffer_add_printf(out, "\r\n\t%s -> %s://%s/%s %s", info->targets.items[i].name,
 					evhttp_uri_get_scheme(info->targets.items[i].uri),
 					evhttp_uri_get_host(info->targets.items[i].uri),
 					evhttp_uri_get_path(info->targets.items[i].uri),
@@ -279,7 +279,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	struct evbuffer* out)
 {
 	char* str;
-	int row, i, j, *field_widths; 
+	int row, i, j, *field_widths;
 	oris_table_t* tbl;
 
 	word_end(&s);
@@ -290,7 +290,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 		return;
 	}
 
-	tbl = oris_get_table(&info->data_tables, oris_upper_str(str)); 
+	tbl = oris_get_table(&info->data_tables, oris_upper_str(str));
 	if (!tbl) {
 		evbuffer_add_printf(out, "unknown table '%s'", str);
 		return;
@@ -301,7 +301,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 		return;
 	}
 
-	evbuffer_add_printf(out, "table '%s' has %d records and %d fields", 
+	evbuffer_add_printf(out, "table '%s' has %d records and %d fields",
 			str, tbl->row_count, tbl->field_count);
 
 	field_widths = oris_table_get_field_widths(tbl);
@@ -374,7 +374,7 @@ static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
 	if (!tbl_name) {
 		evbuffer_add_printf(out, "missing table name");
 		return;
-	} 
+	}
 
 	if (s) {
 		for (; *s && isblank(*s); s++) ; /* skip white space */
@@ -386,12 +386,12 @@ static void oris_builtin_cmd_add(char* s, oris_application_info_t* info,
 		return;
 	}
 
-	tbl = oris_get_or_create_table(&info->data_tables, oris_upper_str(tbl_name), true); 
+	tbl = oris_get_or_create_table(&info->data_tables, oris_upper_str(tbl_name), true);
 	if (!tbl) {
 		evbuffer_add_printf(out, "could not allocate new table %s", tbl_name);
 		return;
 	}
-	
+
 	oris_table_add_row(tbl, row, '|');
 }
 
