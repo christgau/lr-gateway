@@ -227,6 +227,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	oris_protocol_t* protocol = ((oris_connection_t*) connection)->protocol;
 	oris_data_protocol_data_t* self = (oris_data_protocol_data_t*) protocol->data;
 	oris_data_request_t* request;
+	struct timeval response_timeout = { 2, 500000 }; /* 2.5 seconds */
 
 	if (self->state == IDLE) {
 		oris_log_f(LOG_DEBUG, "sending data request %s", buf);
@@ -242,6 +243,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 			if (*s++ == '?') {
 				s = strndup((const char*) s, bufsize - 1);
 				if (s) {
+					event_add(self->idle_event, &response_timeout);
 					self->state = WAIT_FOR_RESPONSE;
 					self->last_req_tbl_name = s;
 					while (*s++) {
@@ -274,9 +276,15 @@ static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
 		return;
 	}
 
+	if (type == EV_TIMEOUT) {
+		self->state = IDLE;
+		oris_log_f(LOG_DEBUG, "change connection to idle state due to "
+				"missing or timedout reponse");
+	}
+
 	request = STAILQ_FIRST(&self->outstanding_requests);
 	if (self->state != IDLE) {
-		oris_log_f(LOG_INFO, "connection not idle, waiting for next chance");
+		oris_log_f(LOG_DEBUG, "connection not idle, waiting for next chance");
 		return;
 	}
 
