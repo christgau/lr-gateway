@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <openssl/err.h>
+#include <event2/util.h>
 
 #include "oris_log.h"
 
@@ -23,10 +24,12 @@ void oris_init_log(const char* logfilename, int desiredLogLevel)
 	logLevel = desiredLogLevel;
 }
 
-static void get_localtime(struct tm* t)
+static void get_localtime(struct tm* t, struct timeval *tv)
 {
 	time_t rawtime;
 
+	evutil_gettimeofday(tv, NULL);
+	rawtime = tv->tv_sec;
 	time(&rawtime);
 #ifndef _WIN32
 	localtime_r(&rawtime, t);
@@ -38,11 +41,25 @@ static void get_localtime(struct tm* t)
 static void oris_log_time(void)
 {
 	struct tm t;
+	struct timeval now;
+	static struct timeval last_log = { 0, 0 };
+	int64_t diff;
 
-	get_localtime(&t);
-	fprintf(logFile, "%4d-%02d-%02d %02d:%02d:%02d: ",
+	get_localtime(&t, &now);
+	fprintf(logFile, "%4d-%02d-%02d %02d:%02d:%02d",
 		1900 + t.tm_year, t.tm_mon + 1, t.tm_mday,
 		t.tm_hour, t.tm_min, t.tm_sec);
+
+	if (last_log.tv_sec != 0) {
+		diff = //(last_log.tv_sec - now.tv_sec) * 1E3 +
+			((now.tv_sec * 1E6 + now.tv_usec) -
+			 (last_log.tv_sec * 1E6 + last_log.tv_usec)) / 1E3;
+		fprintf(logFile, " [+%0ld.%03ld]: ", diff / 1000, diff % 1000);
+	} else {
+		fprintf(logFile, ": ");
+	}
+
+	last_log = now;
 }
 
 static void oris_log_severity(int severity)
