@@ -34,6 +34,7 @@ void oris_protocol_data_init(struct oris_protocol* self)
 
 	self->write = oris_protocol_data_write;
 	self->destroy = oris_protocol_data_free;
+	data->connection = NULL;
 	data->state = IDLE;
 	data->last_req_tbl_name = NULL;
 	data->idle_event = event_new(data->info->libevent_info.base, -1, 0,
@@ -70,6 +71,7 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 	struct evbuffer* input = bufferevent_get_input(bev);
 	char *p_start, *p_end, *bufstart;
 
+	pdata->connection = con;
 	/* receive and return if nothing was recevied */
 	if (oris_protocol_recv(input, &pdata->buffer, &pdata->buf_size, &pdata->buf_capacity) == 0) {
 		return;
@@ -229,6 +231,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	oris_data_request_t* request;
 	struct timeval response_timeout = { 2, 500000 }; /* 2.5 seconds */
 
+	self->connection = connection;
 	if (self->state == IDLE) {
 		oris_log_f(LOG_DEBUG, "sending data request %s", buf);
 		c = LINE_DELIM_START;
@@ -259,7 +262,6 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 		request = calloc(1, sizeof(*request));
 		request->message = malloc(bufsize);
 		request->size = bufsize;
-		request->connection = connection;
 		memcpy(request->message, buf, bufsize);
 
 		STAILQ_INSERT_TAIL(&self->outstanding_requests, request, queue);
@@ -289,8 +291,8 @@ static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
 	}
 
 	STAILQ_REMOVE_HEAD(&self->outstanding_requests, queue);
-	oris_protocol_data_write(request->message, request->size, request->connection,
-		request->connection->write);
+	oris_protocol_data_write(request->message, request->size, self->connection,
+		((oris_connection_t*) self->connection)->write);
 
 	/* keep compiler happy */
 	fd = fd;

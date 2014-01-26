@@ -16,6 +16,7 @@ typedef struct data_request {
 
 typedef struct oris_data_protocol_data {
 	oris_application_info_t* info;
+	void* connection;
 	char* buffer;
 	size_t buf_size;
 	size_t buf_capacity;
