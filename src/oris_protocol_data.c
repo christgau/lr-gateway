@@ -94,6 +94,7 @@ void oris_protocol_data_read_cb(struct bufferevent *bev, void *ctx)
 			} else {
 				/* no delim found, discard recieved stuff and wait for next recv */
 				bufstart = p_start;
+				pdata->buf_size++;
 				break;
 			}
 		}
