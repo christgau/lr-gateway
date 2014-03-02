@@ -20,6 +20,7 @@
 #pragma warning( disable : 4706 )
 #endif
 
+static bool is_empty_reply(const char *exp_tbl_name, const char* reply);
 static void process_line(char* line, oris_data_protocol_data_t* protocol);
 static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info);
 static void oris_protocol_data_write(const void* buf, size_t bufsize,
@@ -137,6 +138,23 @@ static char* strdup_iso8859_to_utf8(char* line)
 	return (char*) retval;
 }
 
+static bool is_empty_reply(const char *exp_tbl_name, const char* reply)
+{
+	bool retval;
+	const char* p;
+
+	retval = strncmp(exp_tbl_name, reply, strlen(exp_tbl_name)) == 0;
+	if (retval) {
+		retval = *(reply + strlen(exp_tbl_name)) == '!';
+		if (retval) {
+			p = reply + strlen(reply) - 1;
+			retval = (*p == '0') && (*(p-1) == '|');
+		}
+	}
+
+	return retval;
+}
+
 static void process_line(char* line, oris_data_protocol_data_t* protocol)
 {
 	oris_table_t* tbl;
@@ -190,8 +208,9 @@ static void process_line(char* line, oris_data_protocol_data_t* protocol)
 	tbl->state = (is_response_line || is_last_line) ? COMPLETE : RECEIVING;
 	if (tbl->state == COMPLETE) {
 		table_complete_cb(tbl, info);
-		if (protocol->state == WAIT_FOR_RESPONSE && strcmp(tbl_name,
-				protocol->last_req_tbl_name) == 0) {
+		if (protocol->state == WAIT_FOR_RESPONSE && (strcmp(tbl_name,
+				protocol->last_req_tbl_name) == 0 || is_empty_reply(
+					protocol->last_req_tbl_name, line))) {
 			/* reset state so we can send outstanding requests */
 			oris_log_f(LOG_DEBUG, "received %s, state is idle now, trigger event", tbl_name);
 			protocol->state = IDLE;
