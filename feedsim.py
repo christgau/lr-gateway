@@ -1,6 +1,7 @@
-from twisted.internet import reactor, protocol, task, stdio
+from twisted.internet import reactor, protocol, task, stdio, defer
 from twisted.protocols import basic
-from random import randint
+from random import randint, random
+from datetime import datetime
 
 class MyProtocol(protocol.Protocol):
     def connectionMade(self):
@@ -43,6 +44,9 @@ class Echo(basic.LineReceiver):
     def connectionMade(self):
         self.transport.write('>>> ')
 
+    def bcast(self, msg, data):
+        self.feedproto.broadcast(msg + '|' + '|'.join(data))
+
     def lineReceived(self, line):
         self.sendLine('Echo: ' + line)
         items = line.split()
@@ -64,8 +68,36 @@ class Echo(basic.LineReceiver):
                     str(randint(1, 6)),
                     '+' + str(randint(0, 59)) + '.' + str(randint(0, 99))
                     ]))
+            elif cmd == "sim":
+                self.loopComp(items[1], int(items[2]), items[3:])
 
         self.transport.write('>>> ')
+
+    def loopComp(self, comp, nsplits, boats):
+        self.bcast('STT0', [comp, comp, '0']);
+
+        delta = 0;
+        xtime = 3;
+        reactor.callLater(xtime, self.bcast, 'STT0', [comp, comp, '1'])
+
+        for split in range(1, nsplits + 1):
+            delta = 0.0
+            rank = 1
+            xtime = xtime + 5 + random() * 5;
+            for boat in boats:
+                reactor.callLater(xtime, self.bcast, "LOG0", [comp, comp, boat, 'y', str(split),
+                    '{:d}:{:05.2f}'.format(int(xtime / 60), xtime % 60) if xtime >= 60 else '{:.2f}'.format(xtime),
+                    str(rank),
+                    '+{:.2f}'.format(delta) if rank > 1 else ''
+                    ]);
+                rank = rank + 1
+                diff = 1 + random() * 2;
+                delta = delta + diff;
+                xtime = xtime + diff;
+
+        reactor.callLater(xtime, self.bcast, 'STT0', [comp, comp, '4'])
+        reactor.callLater(xtime + 5, self.bcast, 'STT0', [comp, comp, '3'])
+
 
 def main():
     myfactory = MyFactory()
