@@ -239,6 +239,11 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			target->uri = evuri;
 			target->enabled = true;
 
+			/* TODO: plain http (no ssl) works fine, but when the https (!) 
+			 * connection is closed by the server side we end up in "bad file descriptor" 
+			 * messages.... so https is not working properbly ATM :-( 
+			 * BUT: maybe http is also affected, as we close the buffereevent_Sockets when
+			 * a close comes in! */
 			if (!use_ssl) {
 				target->ssl = NULL;
 				target->bev = bufferevent_socket_new(config->libevent_info.base,
@@ -247,14 +252,15 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 				target->ssl = SSL_new(config->ssl_ctx);
 				target->bev = bufferevent_openssl_socket_new(
 					config->libevent_info.base, -1, target->ssl,
-					BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE |
-					BEV_OPT_DEFER_CALLBACKS);
+					BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE
+					/*BEV_OPT_DEFER_CALLBACKS*/);
 				if (!target->bev) {
 					oris_log_f(LOG_ERR, "could not create SSL socket for %s", name);
 				}
 				bufferevent_openssl_set_allow_dirty_shutdown(target->bev, 1);
 			}
 
+			target->libevent_info = &config->libevent_info;
 			target->connection = evhttp_connection_base_bufferevent_new(
 				config->libevent_info.base, config->libevent_info.dns_base,
 				target->bev, evhttp_uri_get_host(evuri),

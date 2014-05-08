@@ -13,7 +13,8 @@
 typedef struct oris_http_target {
 	char* name;
 	struct evhttp_uri* uri;
-    struct evhttp_connection* connection;
+	struct evhttp_connection* connection;
+	oris_libevent_base_info_t* libevent_info;
 	struct bufferevent* bev;
 	SSL* ssl;
 	bool enabled;

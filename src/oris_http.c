@@ -69,7 +69,9 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 
 static void http_connection_close(struct evhttp_connection *con, void *ctx)
 {
-	oris_log_f(LOG_DEBUG, "http on %s connection closed", ((oris_http_target_t*) ctx)->name);
+	oris_http_target_t* target = (oris_http_target_t*) ctx;
+	oris_log_f(LOG_DEBUG, "http on %s connection closed", target->name);
+	target->connection = NULL;
 
 	con = con; /* keep compiler happy */
 }
@@ -154,6 +156,22 @@ void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
 		if (!targets[i].enabled) {
 			continue;
 		}
+
+		if (!targets[i].connection) {
+			oris_log_f(LOG_INFO, "recreating http connection %s", targets[i].name);
+
+			targets[i].connection = evhttp_connection_base_bufferevent_new(
+				targets[i].libevent_info->base, targets[i].libevent_info->dns_base,
+				targets[i].bev, evhttp_uri_get_host(targets[i].uri),
+				(unsigned short) evhttp_uri_get_port(targets[i].uri));
+
+			if (!targets[i].connection) {
+				oris_log_f(LOG_CRIT, "failed to re-create http connection %s",
+					targets[i].name);
+				continue;
+			}
+		}
+
 		request = evhttp_request_new(http_request_done_cb, &targets[i]);
 		if (request) {
 			/* todo: place this at a better position */
