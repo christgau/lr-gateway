@@ -195,12 +195,27 @@ static char* oris_get_parsed_request(const char *name)
     return oris_parse_request_tree(oris_get_request_parse_tree(name));
 }
 
+static void oris_add_escaped_json_str_to_buffer(struct evbuffer* target, 
+	oris_parse_expr_t* expr)
+{
+	char *s, *p;
+
+	p = s = strdup((char*) expr->value.as_string->chars);
+	while (s && *p) {
+		if (*p == '"') { *p = '\''; }
+		p++;
+	}
+
+	evbuffer_add_printf(target, "\"%s\"", s);
+	free(s);
+}
+
 static void oris_add_expr_to_buf(struct evbuffer* target, oris_parse_expr_t* expr)
 {
 	if (expr->type == ET_INT) {
 		evbuffer_add_printf(target, "%d", expr->value.as_int);
 	} else if (expr->type == ET_STRING) {
-		evbuffer_add_printf(target, "\"%s\"", expr->value.as_string->chars);
+		oris_add_escaped_json_str_to_buffer(target, expr);
 	} else {
 		evbuffer_add_printf(target, "null");
 	}
@@ -268,7 +283,9 @@ static void oris_dump_expr_value_to_buffer(struct evbuffer* buf, oris_parse_expr
 	if (expr->type == ET_INT) {
 		evbuffer_add_printf(buf, "{\"v\":\"%d\"}", expr->value.as_int);
 	} else if (expr->type == ET_STRING) {
-		evbuffer_add_printf(buf, "{\"v\":\"%s\"}", expr->value.as_string->chars);
+		evbuffer_add_printf(buf, "{\"v\":");
+		oris_add_escaped_json_str_to_buffer(buf, expr);
+		evbuffer_add_printf(buf, "}");
 	} else {
 		evbuffer_add_printf(buf, "{\"v\": null}");
 	}
