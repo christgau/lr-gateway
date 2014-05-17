@@ -168,7 +168,7 @@ int* oris_table_get_field_widths(oris_table_t* tbl)
 	for (i = 0; i < tbl->row_count; i++) {
 		buf = tbl->rows[i].buffer;
 		for (j = 0; j < tbl->rows[i].field_count; j++) {
-			l = (int) strlen(buf);
+			l = (int) mbstowcs(NULL, buf, 0);
 			if (l > retval[j]) {
 				retval[j] = l;
 			}

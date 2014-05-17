@@ -310,7 +310,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 		evbuffer_add_printf(out, "\r\n");
 		for (i = 1; i <= tbl->rows[tbl->current_row].field_count; i++) {
 			if (i > 1) {
-				for (j = (int) strlen(str); j < field_widths[i - 2]; j++) {
+				for (j = (int) mbstowcs(NULL, str, 0); j < field_widths[i - 2]; j++) {
 					evbuffer_add(out, " ", 1);
 				}
 				evbuffer_add(out, " | ", 3);
