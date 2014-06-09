@@ -58,6 +58,7 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 	const char * name, bool create);
 
 bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname);
+void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname);
 
 #define oris_get_table(tbls, name) oris_get_or_create_table(tbls, name, false)
 

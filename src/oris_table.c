@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <ctype.h>
 
 #ifdef _WIN32
 #include <io.h>
@@ -289,6 +290,119 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 
 	return true;
 }
+
+static bool oris_find_table_in_file(FILE* f, const char* tbl_name)
+{
+	char* line = NULL, *s;
+	size_t size = 0;
+	ssize_t length;
+
+	rewind(f);
+
+	while ((length = getline(&line, &size, f)) != -1) {
+		s = line;
+		if ((size_t) length >= strlen(tbl_name) + 2 && *line == '[') {
+			s++;
+			if (strncasecmp(tbl_name, s, strlen(tbl_name)) == 0 &&
+					line[strlen(tbl_name) + 1] == ']') {
+				free(line);
+				return true;
+			}
+		}
+	}
+
+	free(line);
+	return false;
+}
+
+static size_t oris_read_table_from_file(FILE* f, oris_table_t* tbl, bool definition)
+{
+	char* line = NULL, *s;
+	size_t size = 0;
+	size_t retval = 0;
+
+	if (!oris_find_table_in_file(f, tbl->name)) {
+		oris_log_f(LOG_ERR, "table %s not found in data file", tbl->name);
+		return 0;
+	}
+
+	while (getline(&line, &size, f) != -1) {
+		if (*line && isspace(*line)) {
+			break;
+		}
+
+		if (definition && (s = strchr(line, '='))) {
+			*s = DUMP_DELIM;
+		}
+
+		/* think: allow comments */
+		oris_table_add_row(tbl, line, DUMP_DELIM);
+		retval++;
+	}
+
+	return retval;
+}
+
+static void oris_table_add_fields_from_definition(oris_table_t* tbl,
+	oris_table_t* def_tbl)
+{
+	int i;
+	size_t size = 0, count = 0;
+	char* fn;
+	/* skip first field in definition line (= table name) */
+	char* first_name = def_tbl->rows[def_tbl->current_row].buffer +
+		strlen(def_tbl->rows[def_tbl->current_row].buffer) + 1;
+
+	fn = first_name;
+	for (i = 1; i < def_tbl->rows[def_tbl->current_row].field_count; i++) {
+		size += strlen(fn) + 1;
+		fn = first_name + size;
+		count++;
+	}
+
+	/* include double trailing zero */
+	size++;
+
+	tbl->field_names = calloc(size, sizeof(*tbl->field_names));
+	tbl->field_count = count;
+	memcpy(tbl->field_names, first_name, size);
+}
+
+void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname)
+{
+	FILE* f;
+	size_t n;
+	const char* name;
+	oris_table_t def_tbl = { .name = "Definition" };
+	oris_table_t* tbl;
+
+	f = fopen(fname, "r");
+	if (!f) {
+		oris_log_f(LOG_WARNING, "error while reading tables from %s: %s", fname, strerror(errno));
+		return;
+	}
+
+	oris_read_table_from_file(f, &def_tbl, true);
+	ORIS_FOR_EACH_TBL_ROW(&def_tbl) {
+		name = oris_table_get_field_by_index(&def_tbl, 0);
+		if (!name || strlen(name) == 0) {
+			continue;
+		}
+
+		tbl = oris_get_or_create_table(tables, name, true);
+		if (!tbl) {
+			oris_log_f(LOG_ERR, "unable to create table %s", name);
+			continue;
+		}
+
+		oris_table_add_fields_from_definition(tbl, &def_tbl);
+		n = oris_read_table_from_file(f, tbl, false);
+		oris_log_f(LOG_INFO, "loaded %d records for table %s", n, name);
+	}
+
+	fclose(f);
+}
+
 
 /* misc/shortcut functions */
 const char* oris_tables_get_field_by_number(oris_table_list_t* list,
