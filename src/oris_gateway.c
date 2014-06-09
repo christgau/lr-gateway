@@ -63,6 +63,7 @@ int oris_print_usage(oris_application_info_t* info)
 	printf("usage %s [options]\n\n", info->argv[0]);
 	printf("options: \n\t--verbose\t - verbose output (same as info loglevel)\n");
 	printf("\t--loglevel level - sets the loglevel to error, warn, info or debug\n");
+	printf("\t--datafile file\t - loads data from a CP file\n");
 	printf("\t--version\t - print version and exit\n");
 	printf("\t--help   \t - print this help\n");
 
@@ -79,12 +80,13 @@ bool oris_handle_args(oris_application_info_t *info)
 		{ "verbose", no_argument, NULL, 'v' },
 		{ "version", no_argument, NULL, 'V' },
 		{ "loglevel", required_argument, NULL, 'l' },
+		{ "datafile", required_argument, NULL, 'd' },
 /*		{ "logfile", no_argument, NULL, 'L' },*/
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
-	const char* short_opt_str = "vVl:h?";
+	const char* short_opt_str = "vVl:d:h?";
 
 	info->log_level = LOG_ERR;
 	oris_init_log(NULL, info->log_level);
@@ -115,6 +117,9 @@ bool oris_handle_args(oris_application_info_t *info)
 					retval = true;
 				}
 				oris_init_log(NULL, info->log_level);
+				break;
+			case 'd':
+				oris_tables_load_from_file(&info->data_tables, optarg);
 				break;
 			case '?':
 			case 'h':
