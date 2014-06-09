@@ -87,11 +87,14 @@ bool oris_handle_args(oris_application_info_t *info)
 	const char* short_opt_str = "vVl:h?";
 
 	info->log_level = LOG_ERR;
+	oris_init_log(NULL, info->log_level);
+
 	opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	while (opt_code != -1) {
 		switch (opt_code) {
 			case 'v':
 				info->log_level = LOG_INFO;
+				oris_init_log(NULL, info->log_level);
 				break;
 			case 'V':
 				retval = true;
@@ -111,6 +114,7 @@ bool oris_handle_args(oris_application_info_t *info)
 					info->main = &oris_print_usage;
 					retval = true;
 				}
+				oris_init_log(NULL, info->log_level);
 				break;
 			case '?':
 			case 'h':
@@ -148,7 +152,6 @@ int main(int argc, char **argv)
 		if (info.main) {
 			/* debug move causes memory leak in bufferevents */
 			/* event_enable_debug_mode();*/
-			oris_init_log(NULL, info.log_level);
 			retval = info.main(&info);
 		}
 	} else {
