@@ -280,7 +280,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 		}
 	} else {
 		request = calloc(1, sizeof(*request));
-		request->message = malloc(bufsize);
+		request->message = calloc(bufsize, sizeof(*request->message));
 		request->size = bufsize;
 		memcpy(request->message, buf, bufsize);
 
