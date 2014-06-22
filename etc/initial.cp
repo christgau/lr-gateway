@@ -10,4 +10,5 @@ Q;Quarterfinal;Viertelfinale
 R;Repechage;Hoffnungslauf
 S;Semifinal;Halbfinale
 V;Heat;Vorlauf
+X;Race for Lanes;Bahnverteilung
 Z;Intermediate;Zwischenlauf
