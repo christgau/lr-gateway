@@ -376,7 +376,7 @@ static void oris_table_add_fields_from_definition(oris_table_t* tbl,
 void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname)
 {
 	FILE* f;
-	size_t n;
+	size_t n = 0;
 	const char* name;
 	oris_table_t def_tbl = { .name = "Definition" };
 	oris_table_t* tbl;
@@ -402,8 +402,9 @@ void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname)
 
 		oris_table_add_fields_from_definition(tbl, &def_tbl);
 		n = oris_read_table_from_file(f, tbl, false);
-		oris_log_f(LOG_INFO, "loaded %d records for table %s", n, name);
 	}
+
+	oris_log_f(LOG_INFO, "loaded %d records for table %s", n, name);
 
 	fclose(f);
 }
