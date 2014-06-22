@@ -237,9 +237,9 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			target->uri = evuri;
 			target->enabled = true;
 
-			/* TODO: plain http (no ssl) works fine, but when the https (!) 
-			 * connection is closed by the server side we end up in "bad file descriptor" 
-			 * messages.... so https is not working properbly ATM :-( 
+			/* TODO: plain http (no ssl) works fine, but when the https (!)
+			 * connection is closed by the server side we end up in "bad file descriptor"
+			 * messages.... so https is not working properbly ATM :-(
 			 * BUT: maybe http is also affected, as we close the buffereevent_Sockets when
 			 * a close comes in! */
 			if (!use_ssl) {
