@@ -88,9 +88,6 @@ bool oris_handle_args(oris_application_info_t *info)
 
 	const char* short_opt_str = "vVl:d:h?";
 
-	info->log_level = LOG_ERR;
-	oris_init_log(NULL, info->log_level);
-
 	opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	while (opt_code != -1) {
 		switch (opt_code) {
@@ -150,6 +147,10 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof(info));
 	info.argc = argc;
 	info.argv = argv;
+
+	info.log_level = LOG_ERR;
+	oris_init_log(NULL, info.log_level);
+	oris_tables_init(&info.data_tables);
 
 	retval = EXIT_SUCCESS;
 

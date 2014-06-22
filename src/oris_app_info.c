@@ -140,8 +140,6 @@ bool oris_app_info_init(oris_application_info_t* info)
 	info->targets.count = 0;
 	info->dump_fn = "/var/tmp/oris_gateway.cp";
 
-	oris_tables_init(&info->data_tables);
-
 	return oris_init_libevent(info) && oris_init_ssl(info);
 }
 
