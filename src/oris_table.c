@@ -320,15 +320,20 @@ static size_t oris_read_table_from_file(FILE* f, oris_table_t* tbl, bool definit
 	char* line = NULL, *s;
 	size_t size = 0;
 	size_t retval = 0;
+	ssize_t length;
 
 	if (!oris_find_table_in_file(f, tbl->name)) {
 		oris_log_f(LOG_ERR, "table %s not found in data file", tbl->name);
 		return 0;
 	}
 
-	while (getline(&line, &size, f) != -1) {
+	while ((length = getline(&line, &size, f)) != -1) {
 		if (*line && isspace(*line)) {
 			break;
+		}
+
+		if (iscntrl(line[--length])) {
+			line[length--] = 0;
 		}
 
 		if (definition && (s = strchr(line, '='))) {
