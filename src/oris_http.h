@@ -9,7 +9,6 @@
 #include <event2/http.h>
 #include <openssl/ssl.h>
 
-/* key-value pair holding information about an remote http target */
 typedef struct oris_http_target {
 	char* name;
 	struct evhttp_uri* uri;
