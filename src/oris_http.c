@@ -53,7 +53,9 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 
 	status = evhttp_request_get_response_code(req);
 	oris_log_f(status / 100 != 2 && status == 0 ? LOG_ERR : LOG_INFO,
-		"http response %d %s (%d bytes body)",
+		"http response (%s) %s -> %d %s (%d bytes body)",
+		target->name,
+		evhttp_request_get_uri(req),
 		evhttp_request_get_response_code(req),
 		evhttp_request_get_response_code_line(req),
 		length);
@@ -67,14 +69,15 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 	}
 }
 
+
 static void http_connection_close(struct evhttp_connection *con, void *ctx)
 {
 	oris_http_target_t* target = (oris_http_target_t*) ctx;
-	oris_log_f(LOG_DEBUG, "http on %s connection closed", target->name);
-	target->connection = NULL;
+	oris_log_f(LOG_DEBUG, "http connection %s closed", target->name);
 
 	con = con; /* keep compiler happy */
 }
+
 
 bool oris_str_to_http_method(const char* str, enum evhttp_cmd_type* method)
 {
