@@ -53,7 +53,7 @@ class Echo(basic.LineReceiver):
         if len(items) > 0:
             cmd = items[0]
             if cmd == "raw":
-                remainder = line[len(cmd):].trim()
+                remainder = line[len(cmd):].strip()
                 self.feedproto.broadcast(remainder)
             elif cmd == "stt":
                 comp = items[1]
