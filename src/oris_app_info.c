@@ -110,13 +110,16 @@ static bool oris_init_ssl(struct oris_application_info* info)
 
 	OpenSSL_add_all_algorithms();
 
-	info->ssl_ctx = SSL_CTX_new(SSLv3_method());
+	info->ssl_ctx = SSL_CTX_new(TLSv1_method());
 	if (!info->ssl_ctx) {
 		oris_log_f(LOG_CRIT, "could not create SSL context");
 		oris_log_ssl_error(LOG_CRIT);
 
 		return false;
 	}
+
+	SSL_CTX_set_options(info->ssl_ctx, SSL_OP_NO_TLSv1);
+	SSL_CTX_set_options(info->ssl_ctx, SSL_OP_NO_TLSv1_1);
 
 #ifndef _WIN32
 	if (SSL_CTX_load_verify_locations(info->ssl_ctx, SSL_CERT_PATH, NULL) != 1) {
@@ -251,7 +254,7 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 				target->bev = bufferevent_openssl_socket_new(
 					config->libevent_info.base, -1, target->ssl,
 					BUFFEREVENT_SSL_CONNECTING, BEV_OPT_CLOSE_ON_FREE
-					/*BEV_OPT_DEFER_CALLBACKS*/);
+					| BEV_OPT_DEFER_CALLBACKS);
 				if (!target->bev) {
 					oris_log_f(LOG_ERR, "could not create SSL socket for %s", name);
 				}
