@@ -27,7 +27,7 @@ SOURCES=\
 	oris_table.c \
 	oris_util.c \
 	deps/mempool/mem_pool.c \
-	grammars/oris_interpret_tools.c 
+	grammars/oris_interpret_tools.c
 
 OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
 HEADERS=$(patsubst %.c,%.h,$(SOURCES))
@@ -42,16 +42,17 @@ GRAMMAR_ARCHIVE=$(GRAMMARS_DIR)/config.ar
 
 .PHONY: clean memcheck
 
-all: $(GRAMMAR_ARCHIVE) $(TARGET) 
+all: $(GRAMMAR_ARCHIVE) $(TARGET)
 
 %.o: %.c %.h
 	@echo "CC    $<"
 	@$(CC) $(WARNFLAGS) $(CFLAGS) -c $< -o $@ #>/dev/null
 
 $(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS) $(GRAMMAR_ARCHIVE)
-	$(CC) $(WARNFLAGS) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
+	@echo "CCLD  $@"
+	@$(CC) $(WARNFLAGS) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
 
-grammars: $(GRAMMARS_DIR)/*.g 
+grammars: $(GRAMMARS_DIR)/*.g
 	$(MAKE) -C $(GRAMMARS_DIR) grammars
 
 $(GRAMMAR_ARCHIVE): $(GRAMMAR_SRC)
@@ -66,7 +67,7 @@ memcheck: $(TARGET)
 
 clean:
 	$(RM) $(TARGET)
-	$(RM) $(OBJECTS) 
+	$(RM) $(OBJECTS)
 	$(RM) $(GRAMMAR_ARCHIVE)
 	$(RM) tags
 
