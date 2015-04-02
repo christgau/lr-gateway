@@ -42,6 +42,7 @@ tokens {
     HTTP='http';
     ITERATE='iterate';
     END = 'end';
+	UPDATE = 'update';
 
     COLON=':';
     SEMICOLON=';' ;
@@ -102,6 +103,7 @@ action
     : HTTP^ http_method url=expr ('using'! IDENTIFIER ('for'! ('table' | ('each'! 'record' 'of'!)) IDENTIFIER)? | 'with'! 'value'! expr)? SEMICOLON!
     | REQUEST req=IDENTIFIER ('for' 'each' 'record' 'in') tbl=IDENTIFIER SEMICOLON -> ^(FOREACH $req $tbl)
     | REQUEST^ IDENTIFIER SEMICOLON!
+	| UPDATE^ IDENTIFIER 'set'! 'field'! expr '='! expr
     ;
 
 http_method

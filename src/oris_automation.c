@@ -195,7 +195,7 @@ static char* oris_get_parsed_request(const char *name)
     return oris_parse_request_tree(oris_get_request_parse_tree(name));
 }
 
-static void oris_add_escaped_json_str_to_buffer(struct evbuffer* target, 
+static void oris_add_escaped_json_str_to_buffer(struct evbuffer* target,
 	oris_parse_expr_t* expr)
 {
 	char *s, *p;
@@ -366,3 +366,33 @@ void oris_automation_http_action(oris_application_info_t* info,
 
 	evbuffer_free(buf);
 }
+
+void oris_automation_set_tbl_record(oris_application_info_t* info,
+	const char* tbl_name, pANTLR3_BASE_TREE field,
+	pANTLR3_BASE_TREE value_expr)
+{
+	oris_table_t* tbl = tbl_name ? oris_get_table(&info->data_tables, tbl_name) : NULL;
+	oris_parse_expr_t *field_name, *value;
+	int field_index;
+
+	if (tbl) {
+		field_name = oris_expr_parse_from_tree(field);
+		value = oris_expr_parse_from_tree(value_expr);
+
+		if (oris_expr_as_int(field_name, &field_index)) {
+			field_index;
+		} else {
+			field_index = oris_table_get_field_index(tbl, field_name->value.as_string->chars);
+			/* create new named field if it does not exists */
+			if (field_index == -1) {
+
+			}
+		}
+
+		oris_table_set_field(tbl, field_index, value->value.as_string->chars);
+
+		oris_free_expr_value(field_name);
+		oris_free_expr_value(value);
+	}
+}
+

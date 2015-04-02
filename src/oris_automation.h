@@ -27,4 +27,8 @@ void oris_automation_http_action(oris_application_info_t* info,
     pANTLR3_BASE_TREE tmpl_name, oris_parse_expr_t* value_expr,
 	const char* tbl_name, bool request_per_record);
 
+void oris_automation_set_tbl_record(oris_application_info_t* info,
+	const char* tbl_name, pANTLR3_BASE_TREE field_expr,
+	pANTLR3_BASE_TREE value_expr);
+
 #endif /* __ORIS_AUTOMATION_H */

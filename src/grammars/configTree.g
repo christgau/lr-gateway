@@ -85,6 +85,7 @@ action[oris_application_info_t* info]
 	: ^(FOREACH req=IDENTIFIER tbl=IDENTIFIER) { if (do_action) oris_automation_foreach_action(info, (const char*) $req.text->chars, (const char*) $tbl.text->chars); }
 	| ^(REQUEST name=IDENTIFIER) { if (do_action) oris_automation_request_action(info, (const char*) $name.text->chars); }
 	| ^(HTTP method=http_method url=exprTree ( tmpl_name=IDENTIFIER (it=is_record tbl=IDENTIFIER)? | value=expr )? ) { if (do_action) oris_automation_http_action(info, method, $url.start, $tmpl_name, value, $tbl != NULL ? (const char*) $tbl.text->chars : NULL, $it.value); }
+	| ^(UPDATE tbl=IDENTIFIER field=exprTree new_value=exprTree) { if (do_action) oris_automation_set_tbl_record(info, (const char*) $tbl.text->chars, $field.start, $new_value.start); }
 	;
 
 http_method returns [enum evhttp_cmd_type http_method]
