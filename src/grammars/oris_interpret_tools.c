@@ -212,7 +212,6 @@ static void oris_grammar_eval_plus(oris_parse_expr_t* a,
 		r->value.as_string->appendS(r->value.as_string, a->value.as_string);
 		r->value.as_string->appendS(r->value.as_string, b->value.as_string);
 	}
-
 }
 
 static void oris_grammar_eval_arith_op2(int a, int b, int op, int* r)
