@@ -379,17 +379,15 @@ void oris_automation_set_tbl_record(oris_application_info_t* info,
 		field_name = oris_expr_parse_from_tree(field);
 		value = oris_expr_parse_from_tree(value_expr);
 
-		if (oris_expr_as_int(field_name, &field_index)) {
-			field_index;
-		} else {
-			field_index = oris_table_get_field_index(tbl, field_name->value.as_string->chars);
+		if (!oris_expr_as_int(field_name, &field_index)) {
+			field_index = oris_table_get_field_index(tbl, (char*) field_name->value.as_string->chars);
 			/* create new named field if it does not exists */
 			if (field_index == -1) {
-
+				field_index = oris_table_add_field(tbl, (char*) field_name->value.as_string->chars);
 			}
 		}
 
-		oris_table_set_field(tbl, field_index, value->value.as_string->chars);
+		oris_table_set_field(tbl, field_index, (char*) value->value.as_string->chars);
 
 		oris_free_expr_value(field_name);
 		oris_free_expr_value(value);

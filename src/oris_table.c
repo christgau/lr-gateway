@@ -122,7 +122,17 @@ void oris_table_finalize(oris_table_t* tbl)
 	}
 }
 
-static int oris_table_get_field_index(oris_table_t* tbl, const char* field)
+int oris_table_add_field(oris_table_t* tbl, const char* field_name)
+{
+	if (!oris_safe_realloc((void**) &tbl->fields.fields, ++tbl->fields.field_count, sizeof(*tbl->fields.fields))) {
+		return -1;
+	}
+
+	tbl->fields.fields[tbl->fields.field_count - 1] = strdup(field_name);
+	return tbl->fields.field_count;
+}
+
+int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 {
 	int i, retval = 0;
 	char *name;
@@ -204,6 +214,33 @@ int* oris_table_get_field_widths(oris_table_t* tbl)
 	}
 
 	return retval;
+}
+
+void oris_table_set_field(oris_table_t* tbl, int index, const char* value)
+{
+	oris_table_row_t* row;
+	int i;
+
+	oris_table_check_and_reset_cursor(tbl);
+	row = &(tbl->rows[tbl->current_row]);
+
+	if (index > tbl->fields.field_count || index < 1) {
+		return;
+	}
+
+	if (index > row->field_count) {
+		if (!oris_safe_realloc((void**) row->fields, index, sizeof(*row->fields))) {
+			return;
+		}
+
+		for (i = row->field_count; i < index - 1; i++) {
+			row->fields[i] = strdup("");
+		}
+	} else {
+		oris_free_and_null(row->fields[index - 1]);
+	}
+
+	row->fields[index - 1] = strdup(value);
 }
 
 /* table list functions */
@@ -425,9 +462,8 @@ void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname)
 
 		oris_table_add_fields_from_definition(tbl, &def_tbl);
 		n = oris_read_table_from_file(f, tbl, false);
+		oris_log_f(LOG_INFO, "loaded %d records for table %s", n, name);
 	}
-
-	oris_log_f(LOG_INFO, "loaded %d records for table %s", n, name);
 
 	fclose(f);
 }

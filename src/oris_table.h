@@ -44,10 +44,12 @@ bool oris_table_add_row(oris_table_t* table, const char* s, char delim);
 void oris_table_init(oris_table_t* tbl);
 void oris_table_clear(oris_table_t* tbl);
 void oris_table_finalize(oris_table_t* tbl);
+int oris_table_add_field(oris_table_t* tbl, const char* field_name);
+int oris_table_get_field_index(oris_table_t* tbl, const char* field);
 const char* oris_table_get_field(oris_table_t* tbl, const char* field);
 const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index);
 int* oris_table_get_field_widths(oris_table_t* tbl);
-
+void oris_table_set_field(oris_table_t* tbl, int index, const char* value);
 
 /* table list functions */
 void oris_tables_init(oris_table_list_t* list);
