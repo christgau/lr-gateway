@@ -20,7 +20,8 @@
 
 bool oris_table_add_row(oris_table_t* tbl, const char* s, char delim)
 {
-	char* buf;
+	char *buf, *ptr;
+	int i;
 
 	if (!oris_safe_realloc((void**) &(tbl->rows), tbl->row_count + 1, sizeof(*(tbl->rows)))) {
 		return false;
@@ -32,18 +33,35 @@ bool oris_table_add_row(oris_table_t* tbl, const char* s, char delim)
 	}
 
 	tbl->rows[tbl->row_count].field_count = 1;
-	tbl->rows[tbl->row_count].buffer = buf;
-
-	while (*buf) {
-		if (*buf == delim) {
-			*buf = '\0';
+	for (ptr = buf; *ptr; ptr++) {
+		if (*ptr == delim) {
 			tbl->rows[tbl->row_count].field_count++;
+			*ptr = '\0';
 		}
-		buf++;
 	}
 
-	if (tbl->field_count < tbl->rows[tbl->row_count].field_count) {
-		tbl->field_count = tbl->rows[tbl->row_count].field_count;
+	ptr = buf;
+	tbl->rows[tbl->row_count].fields = calloc(tbl->rows[tbl->row_count].field_count,
+			sizeof(*tbl->rows[tbl->row_count].fields));
+	for (i = 0; i < tbl->rows[tbl->row_count].field_count; i++) {
+		tbl->rows[tbl->row_count].fields[i] = strdup(ptr);
+		ptr += strlen(ptr) + 1;
+	}
+
+	free(buf);
+
+	if (tbl->fields.field_count < tbl->rows[tbl->row_count].field_count) {
+		if (!oris_safe_realloc((void**) &tbl->fields.fields,
+					tbl->rows[tbl->row_count].field_count,
+					sizeof(*tbl->fields.fields))) {
+			return false;
+		}
+
+		for (i = tbl->fields.field_count; i < tbl->rows[tbl->row_count].field_count; i++) {
+			tbl->fields.fields[i] = NULL;
+		}
+
+		tbl->fields.field_count = tbl->rows[tbl->row_count].field_count;
 	}
 
 	tbl->row_count++;
@@ -60,7 +78,21 @@ void oris_table_init(oris_table_t* tbl)
 		tbl->name = NULL;
 		tbl->rows = NULL;
 		tbl->state = COMPLETE;
+		tbl->fields.field_count = 0;
+		tbl->fields.fields = NULL;
 	}
+}
+
+static void oris_table_clear_row(oris_table_row_t* row)
+{
+	int i;
+
+	for (i = 0; i< row->field_count; i++) {
+		oris_free_and_null(row->fields[i]);
+	}
+
+	row->field_count = 0;
+	oris_free_and_null(row->fields);
 }
 
 void oris_table_clear(oris_table_t* tbl)
@@ -68,10 +100,11 @@ void oris_table_clear(oris_table_t* tbl)
 	int i;
 
 	for (i = 0; i < tbl->row_count; i++) {
-		oris_free_and_null(tbl->rows[i].buffer);
+		oris_free_and_null(tbl->rows[i].fields);
 		tbl->rows[i].field_count = 0;
 	}
 
+	oris_table_clear_row(&tbl->fields);
 	tbl->row_count = 0;
 	tbl->current_row = -1;
 }
@@ -83,11 +116,9 @@ void oris_table_finalize(oris_table_t* tbl)
 
 		free(tbl->name);
 		free(tbl->rows);
-		free(tbl->field_names);
 
 		tbl->name = NULL;
 		tbl->rows = NULL;
-		tbl->field_names = NULL;
 	}
 }
 
@@ -102,45 +133,43 @@ static int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 	}
 
 	/* look up the field in the field name array */
-	name = tbl->field_names;
-	for (i = 0; i < tbl->field_count; i++) {
-		if (strcmp(field, name) == 0) {
+	for (i = 0; i < tbl->fields.field_count; i++) {
+		name = tbl->fields.fields[i];
+		if (name && strcmp(field, name) == 0) {
 			return i;
 		}
-
-		name = name + strlen(name) + 1;
 	}
 
 	return -1;
 }
 
-const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index)
+inline static bool oris_table_check_and_reset_cursor(oris_table_t* tbl)
 {
-	oris_table_row_t* row;
-	char* retval;
-    int i;
-
 	if (tbl == NULL || tbl->row_count == 0) {
-		return NULL;
+		return false;
 	}
 
 	if (tbl->current_row == -1) {
 		tbl->current_row = 0;
 	}
 
-	row = &(tbl->rows[tbl->current_row]);
-	if (index < 0 || index > (int) row->field_count) {
+	return true;
+}
+
+const char* oris_table_get_field_by_index(oris_table_t* tbl, const int index)
+{
+	oris_table_row_t* row;
+
+	if (!oris_table_check_and_reset_cursor(tbl)) {
 		return NULL;
 	}
 
-	retval = row->buffer;
-	if (retval) {
-		for (i = 1; i < index; i++) {
-			retval = retval + strlen(retval) + 1;
-		}
+	row = &(tbl->rows[tbl->current_row]);
+	if (index <= 0 || index > (int) row->field_count) {
+		return NULL;
 	}
 
-	return retval;
+	return tbl->rows[tbl->current_row].fields[index - 1];
 }
 
 const char* oris_table_get_field(oris_table_t* tbl, const char* field)
@@ -158,22 +187,19 @@ const char* oris_table_get_field(oris_table_t* tbl, const char* field)
 
 int* oris_table_get_field_widths(oris_table_t* tbl)
 {
-	int* retval = calloc(tbl->field_count, sizeof(*retval));
+	int* retval = calloc(tbl->fields.field_count, sizeof(*retval));
 	int i, j, l;
-	char* buf;
 
 	if (!retval) {
 		return retval;
 	}
 
 	for (i = 0; i < tbl->row_count; i++) {
-		buf = tbl->rows[i].buffer;
 		for (j = 0; j < tbl->rows[i].field_count; j++) {
-			l = (int) mbstowcs(NULL, buf, 0);
+			l = (int) mbstowcs(NULL, tbl->rows[i].fields[j], 0);
 			if (l > retval[j]) {
 				retval[j] = l;
 			}
-			buf += l + 1;
 		}
 	}
 
@@ -252,7 +278,6 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 	size_t i;
 	FILE* f;
 	oris_table_row_t row;
-	char* c;
 
 	f = fopen(fname, "w");
 	if (!f) {
@@ -262,7 +287,17 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 
 	fputs("[Definition]\n", f);
 	for (i = 0; i < tables->count; i++) {
-		fprintf(f, "%s=\n", tables->tables[i].name);
+		fprintf(f, "%s=", tables->tables[i].name);
+		for (j = 0; j < tables->tables[i].fields.field_count; j++) {
+			if (j > 0) {
+				fputc(';', f);
+			}
+			if (tables->tables[i].fields.fields[j]) {
+				fputs(tables->tables[i].fields.fields[j], f);
+			} else {
+				fprintf(f, "%d", j + 1);
+			}
+		}
 	}
 
 	fputs("\n", f);
@@ -270,16 +305,11 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 		fprintf(f, "[%s]\n", tables->tables[i].name);
 		for (j = 0; j < tables->tables[i].row_count; j++) {
 			row = tables->tables[i].rows[j];
-			col = 0;
-			c = row.buffer;
-			while (col < row.field_count) {
-				if (*c == '\0') {
-					col++;
-					fputc(DUMP_DELIM, f);
-				} else {
-					fputc(*c, f);
+			for (col = 0; col < row.field_count; col++) {
+				if (col) {
+					fputc(';', f);
 				}
-				c++;
+				fputs(row.fields[col], f);
 			}
 			fputs("\n", f);
 		}
@@ -352,25 +382,18 @@ static void oris_table_add_fields_from_definition(oris_table_t* tbl,
 	oris_table_t* def_tbl)
 {
 	int i;
-	size_t size = 0, count = 0;
-	char* fn;
-	/* skip first field in definition line (= table name) */
-	char* first_name = def_tbl->rows[def_tbl->current_row].buffer +
-		strlen(def_tbl->rows[def_tbl->current_row].buffer) + 1;
+	oris_table_row_t* def = &def_tbl->rows[def_tbl->current_row];
 
-	fn = first_name;
-	for (i = 1; i < def_tbl->rows[def_tbl->current_row].field_count; i++) {
-		size += strlen(fn) + 1;
-		fn = first_name + size;
-		count++;
+	if (def->field_count <= 0) {
+		return;
 	}
 
-	/* include double trailing zero */
-	size++;
+	tbl->fields.field_count = def->field_count - 1;
+	tbl->fields.fields = calloc(tbl->fields.field_count, sizeof(*tbl->fields.fields));
 
-	tbl->field_names = calloc(size, sizeof(*tbl->field_names));
-	tbl->field_count = count;
-	memcpy(tbl->field_names, first_name, size);
+	for (i = 1; i < def->field_count; i++) {
+		tbl->fields.fields[i - 1] = strdup(def->fields[i]);
+	}
 }
 
 void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname)
@@ -389,7 +412,7 @@ void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname)
 
 	oris_read_table_from_file(f, &def_tbl, true);
 	ORIS_FOR_EACH_TBL_ROW(&def_tbl) {
-		name = oris_table_get_field_by_index(&def_tbl, 0);
+		name = oris_table_get_field_by_index(&def_tbl, 1);
 		if (!name || strlen(name) == 0) {
 			continue;
 		}

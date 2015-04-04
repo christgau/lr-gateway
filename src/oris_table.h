@@ -11,7 +11,7 @@
 
 /* a row within a table */
 typedef struct oris_table_row {
-	char* buffer;
+	char** fields;
 	int field_count;
 } oris_table_row_t;
 
@@ -21,12 +21,11 @@ typedef enum { RECEIVING, COMPLETE } oris_table_recv_state;
 /* a single named table with an index to the current (active) row */
 typedef struct oris_table {
 	char* name;
-	char* field_names;
-	int field_count;
 	int current_row;
 	int row_count;
 	oris_table_recv_state state;
 	oris_table_row_t* rows;
+	oris_table_row_t fields;
 } oris_table_t;
 
 

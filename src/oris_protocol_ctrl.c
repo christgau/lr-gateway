@@ -302,7 +302,7 @@ static void oris_builtin_cmd_show(char* s, oris_application_info_t* info,
 	}
 
 	evbuffer_add_printf(out, "table '%s' has %d records and %d fields",
-			str, tbl->row_count, tbl->field_count);
+			str, tbl->row_count, tbl->fields.field_count);
 
 	field_widths = oris_table_get_field_widths(tbl);
 	row = tbl->current_row;
