@@ -146,7 +146,7 @@ int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 	for (i = 0; i < tbl->fields.field_count; i++) {
 		name = tbl->fields.fields[i];
 		if (name && strcmp(field, name) == 0) {
-			return i;
+			return i + 1;
 		}
 	}
 
