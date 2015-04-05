@@ -236,6 +236,8 @@ void oris_table_set_field(oris_table_t* tbl, int index, const char* value)
 		for (i = row->field_count; i < index - 1; i++) {
 			row->fields[i] = strdup("");
 		}
+
+		row->field_count = index;
 	} else {
 		oris_free_and_null(row->fields[index - 1]);
 	}
