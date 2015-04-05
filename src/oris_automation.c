@@ -374,6 +374,7 @@ void oris_automation_set_tbl_record(oris_application_info_t* info,
 	oris_table_t* tbl = tbl_name ? oris_get_table(&info->data_tables, tbl_name) : NULL;
 	oris_parse_expr_t *field_name, *value;
 	int field_index;
+	char *str;
 
 	if (tbl) {
 		field_name = oris_expr_parse_from_tree(field);
@@ -387,8 +388,10 @@ void oris_automation_set_tbl_record(oris_application_info_t* info,
 			}
 		}
 
-		oris_table_set_field(tbl, field_index, (char*) value->value.as_string->chars);
+		str = oris_expr_as_string(value);
+		oris_table_set_field(tbl, field_index, str);
 
+		free(str);
 		oris_free_expr_value(field_name);
 		oris_free_expr_value(value);
 	}
