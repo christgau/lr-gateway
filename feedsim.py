@@ -59,6 +59,10 @@ class Echo(basic.LineReceiver):
                 comp = items[1]
                 state = items[2]
                 self.feedproto.broadcast('|'.join(["STT0", comp, comp, state]))
+            elif cmd == "sta":
+                comp = items[1]
+                count = items[2]
+                self.feedproto.broadcast('|'.join(["STA!", comp, comp, count]))
             elif cmd == "logr":
                 comp = items[1]
                 boat = items[2]
