@@ -75,7 +75,7 @@ static void http_connection_close(struct evhttp_connection *con, void *ctx)
 	oris_http_target_t* target = (oris_http_target_t*) ctx;
 	oris_log_f(LOG_DEBUG, "http connection %s closed", target->name);
 
-	con = con; /* keep compiler happy */
+	(void) con; /* keep compiler happy */
 }
 
 

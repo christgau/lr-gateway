@@ -71,8 +71,8 @@ static void oris_sigint_cb(evutil_socket_t fd, short type, void *arg)
 	event_base_loopbreak(base);
 
 	/* keep compiler happy */
-	fd = fd;
-	type = type;
+	(void) fd;
+	(void) type;
 }
 
 static bool oris_init_libevent(struct oris_application_info *info)

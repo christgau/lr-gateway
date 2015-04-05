@@ -226,8 +226,8 @@ static void oris_builtin_cmd_help(char* s, oris_application_info_t* info,
 				ctrl_commands[i].help);
 	}
 
-	s = s;
-	info = info;
+	(void) s;
+	(void) info;
 }
 
 static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,

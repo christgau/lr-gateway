@@ -1,4 +1,4 @@
-CC=gcc
+CC?=gcc
 AR=ar
 RM=rm -rf
 ANTLR=antlr3

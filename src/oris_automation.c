@@ -22,7 +22,7 @@ static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
 
 bool oris_automation_init(oris_application_info_t* app_info)
 {
-	app_info = app_info;
+	(void) app_info;
 
 	return true;
 }

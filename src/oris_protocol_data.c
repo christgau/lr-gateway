@@ -316,8 +316,8 @@ static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
 		((oris_connection_t*) self->connection)->write);
 
 	/* keep compiler happy */
-	fd = fd;
-	type = type;
+	(void) fd;
+	(void) type;
 	return;
 }
 

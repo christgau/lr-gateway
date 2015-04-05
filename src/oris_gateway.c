@@ -54,7 +54,7 @@ int oris_main_print_version(oris_application_info_t *info)
 {
 	printf("oris gateway version %s with libevent %s\n", ORIS_VERSION, event_get_version());
 
-	info = info;
+	(void) info;
 	return EXIT_SUCCESS;
 }
 

@@ -104,8 +104,8 @@ static void oris_connection_reconnect_timer_cb(evutil_socket_t fd, short event, 
 
 	oris_create_client_socket(connection);
 
-	fd = fd;
-	event = event;
+	(void)fd;
+	(void)event;
 }
 
 
@@ -304,7 +304,7 @@ static void oris_server_connection_do_accept(evutil_socket_t listener, short eve
 		}
 	}
 
-	event = event;
+	(void) event;
 }
 
 void oris_server_connection_free(oris_connection_t* connection)
@@ -352,7 +352,7 @@ static void oris_server_socket_event_cb(struct bufferevent *bev, short event, vo
 
 	}
 
-	ctx = ctx;
+	(void) ctx;
 	bufferevent_free(bev);
 }
 
