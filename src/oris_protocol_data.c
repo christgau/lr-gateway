@@ -279,6 +279,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 			}
 		}
 	} else {
+		oris_log_f(LOG_DEBUG, "connection busy, enqueuing request");
 		request = calloc(1, sizeof(*request));
 		request->message = calloc(bufsize, sizeof(*request->message));
 		request->size = bufsize;
