@@ -337,6 +337,7 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 				fprintf(f, "%d", j + 1);
 			}
 		}
+		fputc('\n', f);
 	}
 
 	fputs("\n", f);
