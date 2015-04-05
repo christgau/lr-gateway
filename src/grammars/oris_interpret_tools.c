@@ -565,9 +565,22 @@ static oris_parse_expr_t* oris_built_in_lookup(pANTLR3_LIST args)
 	oris_expr_cast_to_str(tbl_name_arg);
 
 	tbl = oris_get_table(data_tbls, (const char*) tbl_name_arg->value.as_string->chars);
-	if (!tbl || !oris_expr_as_int(tbl_field_arg, &tbl_field) ||
-			!oris_expr_as_int(lookup_field_arg, &lookup_field))  {
-		return oris_alloc_string_value(NULL);
+	if (!tbl) {
+		goto invalid_args;
+	}
+
+	if (!oris_expr_as_int(tbl_field_arg, &tbl_field)) {
+		tbl_field = oris_table_get_field_index(tbl, (const char*) tbl_field_arg->value.as_string->chars);
+		if (tbl_field == -1) {
+			goto invalid_args;
+		}
+	}
+
+	if (!oris_expr_as_int(lookup_field_arg, &lookup_field))  {
+		lookup_field = oris_table_get_field_index(tbl, (const char*) lookup_field_arg->value.as_string->chars);
+		if (lookup_field == -1) {
+			goto invalid_args;
+		}
 	}
 
 	row_backup = tbl->current_row;
@@ -584,6 +597,9 @@ static oris_parse_expr_t* oris_built_in_lookup(pANTLR3_LIST args)
 	tbl->current_row = row_backup;
 
 	return retval;
+
+invalid_args:
+	return oris_alloc_string_value(NULL);
 }
 
 oris_parse_expr_t* oris_expr_parse_from_tree(const pANTLR3_BASE_TREE tree)
