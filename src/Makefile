@@ -40,7 +40,7 @@ GRAMMAR_SRC=\
 
 GRAMMAR_ARCHIVE=$(GRAMMARS_DIR)/config.ar
 
-.PHONY: clean memcheck
+.PHONY: clean check check-clean memcheck
 
 all: $(GRAMMAR_ARCHIVE) $(TARGET)
 
@@ -60,6 +60,12 @@ $(GRAMMAR_ARCHIVE): $(GRAMMAR_SRC)
 	#for FILE in $(GRAMMAR_SRC); do $(MAKE) `echo $$FILE | sed s/\.c$$/.o/`; done
 	for FILE in $(GRAMMAR_SRC); do $(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
 	$(AR) cr $@ $(patsubst %.c,%.o,$(GRAMMAR_SRC))
+
+check:
+	find . -name '*.c' -and -not -name 'config*' -print0 | xargs -0 -I% clang-check -analyze % -- $(INCLUDEPATHS)
+
+check-clean:
+	rm *.plist
 
 memcheck: $(TARGET)
 	valgrind --tool=memcheck --leak-check=full --show-reachable=yes --log-file=$@ ./$(TARGET) --verbose; true
