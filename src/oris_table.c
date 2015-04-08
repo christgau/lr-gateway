@@ -296,8 +296,6 @@ oris_table_t* oris_get_or_create_table(oris_table_list_t* tbl_list,
 				tbl_list->tables[i] = tbl_list->tables[i - 1];
 				inspos--;
 			}
-		} else {
-			inspos = 0;
 		}
 
 		tbl_list->count++;

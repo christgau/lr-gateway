@@ -131,7 +131,7 @@ void oris_connections_add(oris_connection_list_t* list, oris_connection_t* conne
 	oris_connection_t **new_items, **items = list->items;
 
 	if (connection) {
-		new_items = realloc(items, sizeof(*connection) * (list->count + 1));
+		new_items = realloc(items, sizeof(*items) * (list->count + 1));
 		if (new_items) {
 			list->items = new_items;
 			list->items[list->count] = connection;
