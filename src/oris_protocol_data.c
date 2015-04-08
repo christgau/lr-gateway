@@ -176,6 +176,7 @@ static void process_line(char* line, oris_data_protocol_data_t* protocol)
 	}
 
 	if (*c == '\0') {
+		free(s);
 		return;
 	}
 
@@ -183,6 +184,7 @@ static void process_line(char* line, oris_data_protocol_data_t* protocol)
 	tbl_name = s;
 
 	if (strlen(tbl_name) < 2) {
+		free(s);
 		return;
 	}
 
@@ -195,6 +197,7 @@ static void process_line(char* line, oris_data_protocol_data_t* protocol)
 
 	tbl = oris_get_or_create_table(&info->data_tables, tbl_name, true);
 	if (!tbl) {
+		free(s);
 		free(line);
 		return;
 	}
