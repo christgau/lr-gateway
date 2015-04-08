@@ -41,7 +41,8 @@ static void http_request_done_cb(struct evhttp_request *req, void *ctx)
 
 		/* no ssl error, so maybe socket error */
 		if (!printed_err && errcode != 0) {
-			oris_log_f(LOG_ERR, "socket error: %s (%d)",
+			oris_log_f(LOG_ERR, "HTTP(%s) socket error: %s (%d)",
+				target->name,
 				evutil_socket_error_to_string(errcode),	errcode);
 		}
 
