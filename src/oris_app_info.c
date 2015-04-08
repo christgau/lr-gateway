@@ -110,7 +110,7 @@ static bool oris_init_ssl(struct oris_application_info* info)
 
 	OpenSSL_add_all_algorithms();
 
-	info->ssl_ctx = SSL_CTX_new(TLSv1_method());
+	info->ssl_ctx = SSL_CTX_new(TLSv1_2_method());
 	if (!info->ssl_ctx) {
 		oris_log_f(LOG_CRIT, "could not create SSL context");
 		oris_log_ssl_error(LOG_CRIT);
