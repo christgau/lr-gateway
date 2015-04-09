@@ -43,6 +43,7 @@ tokens {
     ITERATE='iterate';
     END = 'end';
 	UPDATE = 'update';
+	COPY = 'copy';
 
     COLON=':';
     SEMICOLON=';' ;
@@ -103,7 +104,8 @@ action
     : HTTP^ http_method url=expr ('using'! IDENTIFIER ('for'! ('table' | ('each'! 'record' 'of'!)) IDENTIFIER)? | 'with'! 'value'! expr)? SEMICOLON!
     | REQUEST req=IDENTIFIER ('for' 'each' 'record' 'in') tbl=IDENTIFIER SEMICOLON -> ^(FOREACH $req $tbl)
     | REQUEST^ IDENTIFIER SEMICOLON!
-	| UPDATE^ IDENTIFIER 'set'! 'field'! expr '='! expr
+	| UPDATE^ IDENTIFIER 'set'! 'field'! expr '='! expr SEMICOLON!
+	| COPY^ 'table'! expr 'to'! expr SEMICOLON!
     ;
 
 http_method

@@ -227,6 +227,11 @@ pANTLR3_BASE_TREE oris_get_request_parse_tree(const char *name)
     pANTLR3_COMMON_TOKEN token;
     pANTLR3_STRING token_name;
 
+	if (!parsing_state.request_defs_node) {
+		oris_log_f(LOG_WARNING, "no requests defined");
+		return NULL;
+	}
+
     child_count = parsing_state.request_defs_node->getChildCount(parsing_state.request_defs_node);
     for (i = 0; i < child_count; i += 2) {
         child = parsing_state.request_defs_node->getChild(parsing_state.request_defs_node, i);

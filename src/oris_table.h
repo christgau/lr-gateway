@@ -26,6 +26,7 @@ typedef struct oris_table {
 	oris_table_recv_state state;
 	oris_table_row_t* rows;
 	oris_table_row_t fields;
+	bool is_temporary;
 } oris_table_t;
 
 
@@ -44,6 +45,9 @@ bool oris_table_add_row(oris_table_t* table, const char* s, char delim);
 void oris_table_init(oris_table_t* tbl);
 void oris_table_clear(oris_table_t* tbl);
 void oris_table_finalize(oris_table_t* tbl);
+void oris_table_copy_to(oris_table_t* src, oris_table_t* dst);
+
+/* table field functions */
 int oris_table_add_field(oris_table_t* tbl, const char* field_name);
 int oris_table_get_field_index(oris_table_t* tbl, const char* field);
 const char* oris_table_get_field(oris_table_t* tbl, const char* field);

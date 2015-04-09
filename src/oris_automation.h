@@ -31,4 +31,7 @@ void oris_automation_set_tbl_record(oris_application_info_t* info,
 	const char* tbl_name, pANTLR3_BASE_TREE field_expr,
 	pANTLR3_BASE_TREE value_expr);
 
+void oris_automation_copy_table(oris_application_info_t* info,
+	oris_parse_expr_t* src, oris_parse_expr_t* dst);
+
 #endif /* __ORIS_AUTOMATION_H */

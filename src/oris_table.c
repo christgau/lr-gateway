@@ -80,6 +80,7 @@ void oris_table_init(oris_table_t* tbl)
 		tbl->state = COMPLETE;
 		tbl->fields.field_count = 0;
 		tbl->fields.fields = NULL;
+		tbl->is_temporary = false;
 	}
 }
 
@@ -119,6 +120,36 @@ void oris_table_finalize(oris_table_t* tbl)
 
 		tbl->name = NULL;
 		tbl->rows = NULL;
+	}
+}
+
+static void oris_table_copy_row(oris_table_row_t* src, oris_table_row_t* dst)
+{
+	int i;
+
+	dst->field_count = 0;
+	dst->fields = calloc(src->field_count, sizeof(*dst->fields));
+
+	for (i = 0; i < src->field_count; i++) {
+		dst->fields[i] = src->fields[i] ? strdup(src->fields[i]) : NULL;
+	}
+}
+
+void oris_table_copy_to(oris_table_t* src, oris_table_t* dst)
+{
+	int i;
+
+	if (!src || !dst) {
+		return;
+	}
+
+	oris_table_clear(dst);
+	oris_table_copy_row(&src->fields, &dst->fields);
+
+	dst->row_count = src->row_count;
+	dst->rows = calloc(dst->row_count, sizeof(*dst->rows));
+	for (i = 0; i < dst->row_count; i++) {
+		oris_table_copy_row(src->rows + i, dst->rows + i);
 	}
 }
 
@@ -340,6 +371,10 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 
 	fputs("\n", f);
 	for (i = 0; i < tables->count; i++) {
+		if (tables->tables[i].is_temporary) {
+			continue;
+		}
+
 		fprintf(f, "[%s]\n", tables->tables[i].name);
 		for (j = 0; j < tables->tables[i].row_count; j++) {
 			row = tables->tables[i].rows[j];

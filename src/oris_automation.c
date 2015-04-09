@@ -397,3 +397,28 @@ void oris_automation_set_tbl_record(oris_application_info_t* info,
 	}
 }
 
+void oris_automation_copy_table(oris_application_info_t* info,
+	oris_parse_expr_t* src, oris_parse_expr_t* dst)
+{
+	char* src_name = oris_expr_as_string(src);
+	char* dst_name = oris_expr_as_string(dst);
+	oris_table_t *src_tbl, *dst_tbl;
+
+	if ((src_tbl = oris_get_table(&info->data_tables, src_name)) == NULL) {
+		goto cleanup;
+	}
+
+	if ((dst_tbl = oris_get_or_create_table(&info->data_tables, dst_name, true)) == NULL) {
+		goto cleanup;
+	}
+
+	dst_tbl->is_temporary = true;
+	oris_table_clear(dst_tbl);
+	oris_table_copy_to(src_tbl, dst_tbl);
+
+cleanup:
+	oris_free_expr_value(src);
+	oris_free_expr_value(dst);
+	free(dst_name);
+	free(src_name);
+}
