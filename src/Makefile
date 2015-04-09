@@ -5,7 +5,7 @@ ANTLR=antlr3
 
 INCLUDEPATHS=-I$(HOME)/include -I. -I./deps/mempool -I./grammars
 WARNFLAGS=-Wall -Wextra
-CFLAGS=-g -O0 $(INCLUDEPATHS)
+CFLAGS=-g -O0 $(INCLUDEPATHS) -Wall -Wextra -std=c99 -D_GNU_SOURCE
 
 LDFLAGS=-g -levent -levent_openssl -L$(HOME)/lib -L$(ANTLR) -lantlr3c $(shell pkg-config --libs openssl)
 
