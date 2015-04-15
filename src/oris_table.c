@@ -127,7 +127,7 @@ static void oris_table_copy_row(oris_table_row_t* src, oris_table_row_t* dst)
 {
 	int i;
 
-	dst->field_count = 0;
+	dst->field_count = src->field_count;
 	dst->fields = calloc(src->field_count, sizeof(*dst->fields));
 
 	for (i = 0; i < src->field_count; i++) {
