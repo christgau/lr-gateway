@@ -27,6 +27,8 @@
 
 #ifndef _WIN32
 #define SSL_CERT_PATH "/etc/ssl/certs/ca-certificates.crt"
+#else
+#define snprintf _snprintf
 #endif
 
 #define ORIS_DEFAULT_HTTP_PASSWORD "C57yec34kpza86g4"

@@ -70,16 +70,20 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Platform)\$(Configuration)\</IntDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)include\win32;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)include\win32;$(IncludePath)</IncludePath>
+    <PreBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreBuildEventUseInBuild>
+    <PreBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)deps\mempool;$(SolutionDir)grammars;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)deps\mempool;$(SolutionDir)grammars;$(ANTLR3C)Include;$(LIBEVENT)include;$(LIBEVENT)compat;$(LIBEVENT)WIN32-Code;$(LIBEVENT)WIN32-Code\nmake;$(OPENSSL)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;EVENT__HAVE_OPENSSL;REPLACE_GETOPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
@@ -101,6 +105,14 @@
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)antlr3cd.lib</OutputFile>
     </Lib>
+    <PreBuildEvent>
+      <Command>java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)grammars $(SolutionDir)grammars\config.g
+java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)grammars $(SolutionDir)grammars\configTree.g</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>Ws2_32.lib;$(LIBEVENT)libevent.lib;$(LIBEVENT)libevent_openssl.lib;$(OPENSSL)lib\VC\ssleay32MD.lib;$(OPENSSL)lib\VC\libeay32MD.lib;$(ANTLR3C)$(Configuration)\antlr3cd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -148,11 +160,11 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)deps\mempool;$(SolutionDir)grammars;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)deps\mempool;$(SolutionDir)grammars;$(ANTLR3C)Include;$(LIBEVENT)include;$(LIBEVENT)WIN32-Code;$(LIBEVENT)WIN32-Code\nmake;$(OPENSSL)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
@@ -171,6 +183,13 @@
       <AdditionalDependencies>Ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)antlr3c.lib</OutputFile>
     </Lib>
+    <PreBuildEvent>
+      <Command>java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)grammars $(SolutionDir)grammars\config.g
+java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)grammars $(SolutionDir)grammars\configTree.g</Command>
+    </PreBuildEvent>
+    <Link>
+      <AdditionalDependencies>Ws2_32.lib;$(LIBEVENT)libevent.lib;$(LIBEVENT)libevent_openssl.lib;$(OPENSSL)lib\VC\static\ssleay32MT.lib;$(OPENSSL)lib\VC\static\libeay32MT.lib;$(ANTLR3C)$(Configuration)\antlr3c.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -241,6 +260,7 @@
     <ClCompile Include="grammars/oris_interpret_tools.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="deps\getopt\getopt.h" />
     <ClInclude Include="include\win32\stdbool.h" />
     <ClInclude Include="include\win32\getopt.h" />
     <ClInclude Include="oris_app_info.h" />

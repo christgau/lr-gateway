@@ -1,2 +1,6 @@
 asm
 X64
+Win32
+*.sln
+*.suo
+*.user

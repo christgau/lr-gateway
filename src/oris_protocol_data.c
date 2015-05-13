@@ -267,8 +267,9 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 		if (bufsize > 0) {
 			s = (char*) buf;
 			if (*s++ == '?') {
-				s = strndup((const char*) s, bufsize - 1);
+				s = strdup((const char*) s);
 				if (s) {
+					s[bufsize - 1] = 0;
 					event_add(self->idle_event, &response_timeout);
 					self->state = WAIT_FOR_RESPONSE;
 					self->last_req_tbl_name = s;

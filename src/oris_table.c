@@ -10,6 +10,8 @@
 
 #ifdef _WIN32
 #include <io.h>
+#define ssize_t int
+#define strncasecmp _strnicmp
 #endif
 
 #include "oris_table.h"
@@ -184,7 +186,7 @@ int oris_table_get_field_index(oris_table_t* tbl, const char* field)
 	return -1;
 }
 
-inline static bool oris_table_check_and_reset_cursor(oris_table_t* tbl)
+static bool oris_table_check_and_reset_cursor(oris_table_t* tbl)
 {
 	if (tbl == NULL || tbl->row_count == 0) {
 		return false;
@@ -393,6 +395,45 @@ bool oris_tables_dump_to_file(oris_table_list_t* tables, const char* fname)
 
 	return true;
 }
+#ifdef _WIN32
+ssize_t getline(char** buffer, size_t* size, FILE* f)
+{
+	int c;
+	long line_size = 0;
+
+	if (feof(f)) {
+		return -1;
+	}
+
+	do {
+		line_size++;
+		c = fgetc(f);
+	} while (c != EOF && c != '\n');
+
+	if (*size < (size_t) line_size || *buffer == NULL) {
+		if (!oris_safe_realloc((void**) buffer, line_size + 1, sizeof(*buffer))) {
+			return -1;
+		}
+		*size = line_size + 1;
+	}
+
+	if (fseek(f, -line_size - 1, SEEK_CUR) != 0) {
+		return -1;
+	}
+
+	if (fread(*buffer, sizeof(**buffer), line_size, f) != (size_t) line_size) {
+		return -1;
+	}
+
+	if (line_size > 0 && (*buffer)[line_size - 1] == '\r') {
+		(*buffer)[line_size - 1] = '\0';
+	} else {
+		(*buffer)[line_size] = '\0';
+	}
+
+	return line_size;
+}
+#endif
 
 static bool oris_find_table_in_file(FILE* f, const char* tbl_name)
 {
@@ -474,7 +515,7 @@ void oris_tables_load_from_file(oris_table_list_t* tables, const char* fname)
 	FILE* f;
 	size_t n = 0;
 	const char* name;
-	oris_table_t def_tbl = { .name = "Definition" };
+	oris_table_t def_tbl = { "Definition" };
 	oris_table_t* tbl;
 
 	f = fopen(fname, "r");

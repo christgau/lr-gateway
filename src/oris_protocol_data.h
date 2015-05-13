@@ -2,6 +2,15 @@
 #define __ORIS_PROTOCOL_DATA_H
 
 #include <sys/queue.h>
+#ifdef _WIN32
+#define STAILQ_ENTRY SIMPLEQ_ENTRY
+#define STAILQ_HEAD SIMPLEQ_HEAD
+#define STAILQ_FIRST SIMPLEQ_FIRST
+#define STAILQ_INIT SIMPLEQ_INIT
+#define STAILQ_EMPTY SIMPLEQ_EMPTY
+#define STAILQ_INSERT_TAIL SIMPLEQ_INSERT_TAIL
+#define STAILQ_REMOVE_HEAD(head, field) SIMPLEQ_REMOVE_HEAD(head, (head)->sqh_first, field)
+#endif
 
 #include <event2/bufferevent.h>
 
