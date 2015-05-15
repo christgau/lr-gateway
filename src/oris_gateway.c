@@ -83,12 +83,13 @@ bool oris_handle_args(oris_application_info_t *info)
 		{ "loglevel", required_argument, NULL, 'l' },
 		{ "datafile", required_argument, NULL, 'd' },
 		{ "config", required_argument, NULL, 'c' },
+		{ "cert", required_argument, NULL, 'C' },
 /*		{ "logfile", no_argument, NULL, 'L' },*/
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
-	const char* short_opt_str = "vVl:d:c:h?";
+	const char* short_opt_str = "vVl:d:c:C:h?";
 
 	opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	while (opt_code != -1) {
@@ -123,6 +124,9 @@ bool oris_handle_args(oris_application_info_t *info)
 			case 'c':
 				info->config_fn = strdup(optarg);
 				break;
+			case 'C':
+				info->cert_fn = strdup(optarg);
+				break;
 			case '?':
 			case 'h':
 				retval = true;
@@ -153,6 +157,7 @@ int main(int argc, char **argv)
 	info.argc = argc;
 	info.argv = argv;
 	info.config_fn = NULL;
+	info.cert_fn = NULL;
 
 	info.log_level = LOG_ERR;
 	oris_init_log(NULL, info.log_level);

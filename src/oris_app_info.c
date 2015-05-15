@@ -132,6 +132,12 @@ static bool oris_init_ssl(struct oris_application_info* info)
 	}
 #endif
 
+	if (info->cert_fn != NULL) {
+		if (SSL_CTX_use_certificate_file(info->ssl_ctx,
+			info->cert_fn, SSL_FILETYPE_PEM) == 1) {
+			oris_log_ssl_error(LOG_CRIT);
+		}
+	}
 	/* no certificate verification ATM */
 /*	SSL_CTX_set_verify(info->ssl_ctx, SSL_VERIFY_PEER, NULL);*/
 /*	FIXME: SSL_CTX_set_cert_verify_callback(info->ssl_ctx, */
@@ -177,7 +183,9 @@ void oris_app_info_finalize(oris_application_info_t* info)
 	evdns_base_free(info->libevent_info.dns_base, 0);
 	event_base_free(info->libevent_info.base);
 
+	oris_free_and_null(info->cert_fn);
 	oris_free_and_null(info->config_fn);
+
 	oris_finalize_ssl(info);
 }
 

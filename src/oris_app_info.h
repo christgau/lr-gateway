@@ -33,6 +33,7 @@ typedef struct oris_application_info {
 	int log_level;
 	char* dump_fn;
 	char* config_fn;
+	char* cert_fn;
 
 	int argc;
 	char** argv;
