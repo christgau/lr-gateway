@@ -177,6 +177,7 @@ void oris_app_info_finalize(oris_application_info_t* info)
 	evdns_base_free(info->libevent_info.dns_base, 0);
 	event_base_free(info->libevent_info.base);
 
+	oris_free_and_null(info->config_fn);
 	oris_finalize_ssl(info);
 }
 

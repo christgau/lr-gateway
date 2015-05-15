@@ -63,6 +63,7 @@ int oris_print_usage(oris_application_info_t* info)
 	printf("usage %s [options]\n\n", info->argv[0]);
 	printf("options: \n\t--verbose\t - verbose output (same as info loglevel)\n");
 	printf("\t--loglevel level - sets the loglevel to error, warn, info or debug\n");
+	printf("\t--config file\t - use given file to read configuration\n");
 	printf("\t--datafile file\t - loads data from a CP file\n");
 	printf("\t--version\t - print version and exit\n");
 	printf("\t--help   \t - print this help\n");
@@ -81,12 +82,13 @@ bool oris_handle_args(oris_application_info_t *info)
 		{ "version", no_argument, NULL, 'V' },
 		{ "loglevel", required_argument, NULL, 'l' },
 		{ "datafile", required_argument, NULL, 'd' },
+		{ "config", required_argument, NULL, 'c' },
 /*		{ "logfile", no_argument, NULL, 'L' },*/
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
-	const char* short_opt_str = "vVl:d:h?";
+	const char* short_opt_str = "vVl:d:c:h?";
 
 	opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	while (opt_code != -1) {
@@ -118,6 +120,9 @@ bool oris_handle_args(oris_application_info_t *info)
 			case 'd':
 				oris_tables_load_from_file(&info->data_tables, optarg);
 				break;
+			case 'c':
+				info->config_fn = strdup(optarg);
+				break;
 			case '?':
 			case 'h':
 				retval = true;
@@ -147,6 +152,7 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof(info));
 	info.argc = argc;
 	info.argv = argv;
+	info.config_fn = NULL;
 
 	info.log_level = LOG_ERR;
 	oris_init_log(NULL, info.log_level);

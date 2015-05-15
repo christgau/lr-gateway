@@ -84,9 +84,11 @@ bool oris_load_configuration(oris_application_info_t* info)
 
 	memset(fname, 0, sizeof(fname));
 	oris_get_config_filename(fname, MAX_PATH - 1);
-	oris_log_f(LOG_DEBUG, "loading configuration from: %s.", fname);
+	oris_log_f(LOG_DEBUG, "loading configuration from: %s.",
+		(info->config_fn ? info->config_fn : fname));
 
-	parsing_state.input = antlr3FileStreamNew((pANTLR3_UINT8) &fname, ANTLR3_ENC_UTF8);
+	parsing_state.input = antlr3FileStreamNew((pANTLR3_UINT8)
+		(info->config_fn ? info->config_fn : (char*) &fname), ANTLR3_ENC_UTF8);
 	if (parsing_state.input == NULL) {
 		return false;
 	}
