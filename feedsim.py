@@ -44,7 +44,9 @@ class Echo(basic.LineReceiver):
     def connectionMade(self):
         self.transport.write('>>> ')
 
-    def bcast(self, msg, data):
+    def bcast(self, msg, data, beep=False):
+        if (beep):
+            print '\a'
         self.feedproto.broadcast(msg + '|' + '|'.join(data))
 
     def lineReceived(self, line):
