@@ -160,8 +160,8 @@ java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)gr
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)deps\mempool;$(SolutionDir)grammars;$(ANTLR3C)Include;$(LIBEVENT)include;$(LIBEVENT)WIN32-Code;$(LIBEVENT)WIN32-Code\nmake;$(OPENSSL)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)deps\mempool;$(SolutionDir)grammars;$(ANTLR3C)Include;$(LIBEVENT)compat;$(LIBEVENT)include;$(LIBEVENT)WIN32-Code;$(LIBEVENT)WIN32-Code\nmake;$(OPENSSL)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;EVENT__HAVE_OPENSSL;REPLACE_GETOPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>Sync</ExceptionHandling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -173,7 +173,7 @@ java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)gr
       <PrecompiledHeader>
       </PrecompiledHeader>
       <WarningLevel>Level4</WarningLevel>
-      <TreatWarningAsError>true</TreatWarningAsError>
+      <TreatWarningAsError>false</TreatWarningAsError>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <CallingConvention>Cdecl</CallingConvention>
       <CompileAs>CompileAsC</CompileAs>
@@ -188,7 +188,7 @@ java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)gr
 java -cp $(ANTLR3)lib\antlr-3.4-complete.jar org.antlr.Tool -fo $(SolutionDir)grammars $(SolutionDir)grammars\configTree.g</Command>
     </PreBuildEvent>
     <Link>
-      <AdditionalDependencies>Ws2_32.lib;$(LIBEVENT)libevent.lib;$(LIBEVENT)libevent_openssl.lib;$(OPENSSL)lib\VC\static\ssleay32MT.lib;$(OPENSSL)lib\VC\static\libeay32MT.lib;$(ANTLR3C)$(Configuration)\antlr3c.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;$(LIBEVENT)libevent.lib;$(LIBEVENT)libevent_openssl.lib;$(OPENSSL)lib\VC\ssleay32MT.lib;$(OPENSSL)lib\VC\libeay32MT.lib;$(ANTLR3C)$(Configuration)\antlr3c.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
