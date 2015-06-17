@@ -24,7 +24,7 @@ extern const oris_error_t ORIS_EINVALID_ARG;
 bool oris_safe_realloc(void** ptr, size_t n, size_t blk_size);
 size_t oris_safe_strlen(const char* s);
 
-#define oris_free_and_null(ptr) do { free(ptr); ptr = NULL;  } while (ptr);
+#define oris_free_and_null(ptr) while (ptr) { free(ptr); ptr = NULL;  }
 
 bool oris_strtoint(const char* s, int* v);
 
