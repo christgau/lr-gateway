@@ -17,6 +17,7 @@ typedef struct oris_http_target {
 	struct bufferevent* bev;
 	SSL* ssl;
 	bool enabled;
+	char* auth_header_value;
 } oris_http_target_t;
 
 void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,

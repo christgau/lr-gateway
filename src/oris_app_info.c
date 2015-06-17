@@ -37,6 +37,7 @@
 /* forwards */
 static void oris_targets_clear(oris_http_target_t* targets, int *count);
 static void oris_ensure_userinfo(struct evhttp_uri *evuri);
+static void oris_set_http_target_auth_header(oris_http_target_t* target);
 
 /* definitons */
 static void oris_libevent_log_cb(int severity, const char* msg)
@@ -189,40 +190,33 @@ void oris_app_info_finalize(oris_application_info_t* info)
 	oris_finalize_ssl(info);
 }
 
-#define USERINFO_BUF_SIZE 128
-
-static void oris_ensure_userinfo(struct evhttp_uri *evuri)
+static void oris_set_http_target_auth_header(oris_http_target_t* target)
 {
-	const char* userinfo = evhttp_uri_get_userinfo(evuri);
-	char s[USERINFO_BUF_SIZE] = { 0 };
-	size_t len = userinfo ? strlen(userinfo) : 0;
-	char* pass = len ? strchr(userinfo, ':') : NULL;
-	unsigned char pass_hash[SHA256_DIGEST_LENGTH];
-	char pass_hash_hex[SHA256_DIGEST_LENGTH * 2 + 1];
-	SHA256_CTX sha;
+	const char* userinfo = evhttp_uri_get_userinfo(target->uri);
+	BIO *bio, *base64;
+	BUF_MEM *buffer;
+	char* auth_value;
 
-	SHA256_Init(&sha);
-	if (len == 0) {
-		/* no userinfo specified, set defaults */
-		snprintf(s, sizeof(s), "%s", ORIS_DEFAULT_HTTP_USER);
-		SHA256_Update(&sha, ORIS_DEFAULT_HTTP_PASSWORD, strlen(ORIS_DEFAULT_HTTP_PASSWORD));
-	} else if (!pass) {
-		/* username but no password, set default password */
-		snprintf(s, sizeof(s), "%s", userinfo);
-		SHA256_Update(&sha, ORIS_DEFAULT_HTTP_PASSWORD, strlen(ORIS_DEFAULT_HTTP_PASSWORD));
-	} else {
-		/* both given, extract */
-		snprintf(s, pass - s, "%s", userinfo);
-		pass++;
-		SHA256_Update(&sha, pass, strlen(pass));
+	if (userinfo == NULL) {
+		return;
 	}
-	SHA256_Final(pass_hash, &sha);
-	oris_buf_to_hex(pass_hash, sizeof(pass_hash), pass_hash_hex);
-	pass_hash_hex[sizeof(pass_hash_hex) - 1] = 0;
 
-	len = strlen(s);
-	snprintf(s + len, sizeof(s) - len, ":%s", pass_hash_hex);
-	evhttp_uri_set_userinfo(evuri, s);
+	base64 = BIO_new(BIO_f_base64());
+	bio = BIO_new(BIO_s_mem());
+	bio = BIO_push(base64, bio);
+
+	BIO_set_flags(bio, BIO_FLAGS_BASE64_NO_NL);
+	BIO_write(bio, userinfo, strlen(userinfo));
+	BIO_flush(bio);
+	BIO_get_mem_ptr(bio, &buffer);
+
+	target->auth_header_value = (char*) calloc(6 + 2 +
+		buffer->length, sizeof(*auth_value));
+
+	evutil_snprintf(target->auth_header_value,
+		6 + 1 + buffer->length, "Basic %s", buffer->data); //buffer->data);
+
+	BIO_free_all(bio);
 }
 
 void oris_config_add_target(oris_application_info_t* config, const char* name, const char* uri)
@@ -244,12 +238,14 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 				evhttp_uri_set_port(evuri, use_ssl ? 443 : 80);
 			}
 
-			oris_ensure_userinfo(evuri);
 			config->targets.items = items;
 			target = config->targets.items + config->targets.count;
 			target->name = strdup(name);
 			target->uri = evuri;
 			target->enabled = true;
+			target->auth_header_value = NULL;
+
+			oris_set_http_target_auth_header(target);
 
 			/* TODO: plain http (no ssl) works fine, but when the https (!)
 			 * connection is closed by the server side we end up in "bad file descriptor"
@@ -305,6 +301,8 @@ void oris_targets_clear(oris_http_target_t* targets, int *count)
 			evhttp_connection_free(targets[i].connection);
 			targets[i].connection = NULL;
 		}
+
+		oris_free_and_null(targets[i].auth_header_value);
 	}
 
 	*count = 0;
