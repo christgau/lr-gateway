@@ -376,7 +376,10 @@ char* oris_expr_as_string(const oris_parse_expr_t* expr)
 
 	if (expr) {
 		if (expr->type == ET_STRING) {
-			retval = strdup((char*) expr->value.as_string->chars);
+			retval = (char*) calloc(sizeof(*retval), expr->value.as_string->len + 1);
+			if (retval) {
+				memcpy(retval, expr->value.as_string->chars, expr->value.as_string->len);
+			}
 		} else {
 			snprintf(itoabuf, sizeof(itoabuf) - 1, "%d", expr->value.as_int);
 			retval = strdup(itoabuf);
