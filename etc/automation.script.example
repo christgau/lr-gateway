@@ -13,6 +13,9 @@ targets:
 on connection established:
 	request current_event;
 
+on table cmd:
+	request bypass;
+
 on table ver:
 	http put ("/event/" + {VER.1}) using event;
 	http put "/currentevent" with value {VER.1};
@@ -21,23 +24,46 @@ on table tod:
 	http put "/time" with value {TOD.1};
 
 on table vrd:
-	http put ("/event/" + {VER.1} + "/comp/" + {VRD.1}) using competition for each record of VRD;
-	request splits for each record in VRD;
-	request startlist for each record in VRD;
+	iterate vrd:
+		http put ("/event/" + {VER.1} + "/comp/" + {VRD.1}) using competition;
+		request splits;
+		request startlist;
+	end;
 
 on table sta:
+	copy table "STA" to ("STA_" + {VER.1} + "_" + {STA!.1});
 	http put ("/event/" + {VER.1} + "/comp/" + {STA!.1} + "/splits") using splits for table STA;
+	if (LOOKUP({STA!.1}, "VRD", 1, 10) == 3) iterate sta:
+		if ({STA.1} != 'S') request splits_from_sta;
+	end;
 
 on table stl:
-	http put ("/event/" + {VER.1} + "/comp/" + {STL!.1} + "/startlist") using startlist for table STA;
+	http put ("/event/" + {VER.1} + "/comp/" + {STL!.1} + "/startlist") using startlist for table STL;
+
+on table rnr:
+	http put ("/event/" + {VER.1} + "/comp/" + {RNR!.1} + "/results") using split_result for table RNR;
 
 on table log:
-	http put ("/event/" + {VER.1} + "/comp/" + {LOG.1} + "/result/" + {LOG.3}) using logentry;
+	http put ("/event/" + {VER.1} + "/comp/" + {LOG.1} + "/boat/" + {LOG.3} + "/split/" + {LOG.5}) using logentry;
 
 on table stt:
-	if ({STT.3} == 6) http post ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/state") with value {STT.3};
-	if ({STT.3} == 6) http delete ("/event/" + {VER.1} + "/comp/" + {STT!.1} + "/startlist");
-	if ({STT.3} == 0) http delete ("/event/" + {VER.1} + "/comp/" + {STT!.1} + "/results");
+	if ({STT.3} == 6) http delete ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/startlist");
+	if ({STT.3} == 0) http delete ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/result");
+	http put ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/state") with value {STT.3};
+	iterate vrd:
+		if ({VRD.1} == {STT.1}) update vrd set field (10) = {STT.3};
+	end;
+	# create final result items
+	if ({STT.3} == 3) copy table "STA_" + {VER.1} + "_" + {STA!.1} to "STA_R";
+	if ({STT.3} == 3) iterate STA_R:
+		if {STA_R.1} >= 1 request final_split_result;
+	end;
+
+on command "cc":
+	http delete ("/event/" + {VER.1} + "/cache");
+
+on command "setslug":
+	http put ("/event/" + {VER.1} + "/slug") with value LOOKUP({VER.1}, "SLUG", 1, 2);
 
 template event:
 	title: {VER.2}
@@ -51,6 +77,7 @@ template competition:
 	id: {VRD.1}
 	raceClass: {VRD.3}
 	label: {VRD.4}
+#	label: LOOKUP({VRD.11}, 'HEATDEF', 1, 3) + ' ' + {VRD.12}
 	dateTime: TOKEN({VRD.6}, 3, '.') + '-' + LPAD(TOKEN({VRD.6}, 2, '.'), 2, '0') + "-" + LPAD(TOKEN({VRD.6}, 1, '.'), 2, '0') + 'T' + {VRD.7} + ":00"
 	gender: {VRD.8}
 	qrule: {VRD.9}
@@ -59,13 +86,14 @@ template competition:
 	heat: {VRD.12}
 	distance: {VRD.13}
 	raceNr: {VRD.14}
+	numAthletes: {VRD.15}
 
 template splits:
 	offset: {STA.1}
 	distance: {STA.4}
 
 template startlist:
-	id: {STL.1}
+	bid: {STL.1}
 	bib: {STL.2}
 	lane: {STL.3}
 	label: {STL.5}
@@ -73,13 +101,25 @@ template startlist:
 	nation: {STL.7}
 
 template logentry:
-	split: {LOG.5}
 	rank: {LOG.7}
 	result: {LOG.6}
 	delta: {LOG.8}
 
+template fullresult:
+	bib: { RES.2 }
+	qualified: { RES.13 }
+
+template split_result:
+	bid: {RNR.2}
+	split: {RNR!.4}
+	rank: {RNR.1}
+	result: {RNR.5}
+	delta: {RNR.6}
+
 requests:
+	bypass: "?" + {CMD.1} + "|" + {CMD.2} + "|" + {CMD.3}
 	current_event: "?VER"
+	final_split_result_1: "?RNR|" + {STT.1} + "|" + {STT.1} + "|" + {STA_R.1}
 	splits: "?STA|" + {VRD.1} + "|" + {VRD.1}
+	splits_from_sta: "?RNR|" + {STA!.1} + "|" + {STA!.1} + "|" + {STA.1}
 	startlist: "?STL|" + {VRD.1} + "|" + {VRD.1}
-	finalresult: "?RES" + {STT.1} + "|" + {STT.1}
