@@ -356,10 +356,10 @@ static void oris_builtin_cmd_request(char* s, oris_application_info_t* info,
 	request = next_word(&s);
 
 	if (request) {
-		oris_log_f(LOG_DEBUG, "sending requesting %s", request);
+		oris_log_f(LOG_DEBUG, "sending data request %s", request);
 		oris_connections_send(&info->connections, "data", request, strlen(request));
 	} else {
-		evbuffer_add_printf(out, "now request given");
+		evbuffer_add_printf(out, "no request given");
 	}
 }
 
