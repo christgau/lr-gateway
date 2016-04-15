@@ -480,7 +480,8 @@ static size_t oris_read_table_from_file(FILE* f, oris_table_t* tbl, bool definit
 			line[length--] = 0;
 		}
 
-		if (definition && (s = strchr(line, '='))) {
+		s = strchr(line, '=');
+		if (definition && s) {
 			*s = DUMP_DELIM;
 		}
 

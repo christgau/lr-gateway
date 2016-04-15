@@ -55,9 +55,9 @@ static void oris_log_time(void)
 		t.tm_hour, t.tm_min, t.tm_sec);
 
 	if (last_log.tv_sec != 0) {
-		diff =
-			((now.tv_sec * 1E6 + now.tv_usec) -
-			 (last_log.tv_sec * 1E6 + last_log.tv_usec)) / 1E3;
+		diff = (int64_t)
+			(((now.tv_sec * 1E6 + now.tv_usec) -
+			 (last_log.tv_sec * 1E6 + last_log.tv_usec)) / 1E3);
 		fprintf(logFile, " [+%0ld.%03ld]: ", diff / 1000, diff % 1000);
 	} else {
 		fprintf(logFile, ": ");

@@ -91,12 +91,11 @@ static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
 	pANTLR3_BASE_TREE name_node = tree->getChild(tree, 0);
 	pANTLR3_BASE_TREE action_tree = tree->getChild(tree, 1);
 	pANTLR3_BASE_TREE cond_expr_tree = tree->getChild(tree, 2);
-	oris_table_t* tbl;
+	oris_table_t* tbl = oris_get_table(&info->data_tables, 
+		(const char*) name_node->getText(name_node)->chars);
 	int row;
 
-	if (!name_node || !action_tree || !(tbl = oris_get_table(&info->data_tables,
-			(const char*) name_node->getText(name_node)->chars))) {
-
+	if (!name_node || !action_tree || !(tbl)) {
 		return;
 	}
 
