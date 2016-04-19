@@ -36,7 +36,6 @@
 
 /* forwards */
 static void oris_targets_clear(oris_http_target_t* targets, int *count);
-static void oris_ensure_userinfo(struct evhttp_uri *evuri);
 static void oris_set_http_target_auth_header(oris_http_target_t* target);
 
 /* definitons */
