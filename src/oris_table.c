@@ -467,7 +467,7 @@ static size_t oris_read_table_from_file(FILE* f, oris_table_t* tbl, bool definit
 	ssize_t length;
 
 	if (!oris_find_table_in_file(f, tbl->name)) {
-		oris_log_f(LOG_ERR, "table %s not found in data file", tbl->name);
+		oris_log_f(LOG_WARNING, "table %s not found in data file", tbl->name);
 		return 0;
 	}
 
