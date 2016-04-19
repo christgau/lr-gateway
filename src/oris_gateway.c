@@ -63,6 +63,7 @@ int oris_print_usage(oris_application_info_t* info)
 	printf("usage %s [options]\n\n", info->argv[0]);
 	printf("options: \n\t--verbose\t - verbose output (same as info loglevel)\n");
 	printf("\t--loglevel level - sets the loglevel to error, warn, info or debug\n");
+	printf("\t--cert file\t - certificate for client authentication\n");
 	printf("\t--config file\t - use given file to read configuration\n");
 	printf("\t--datafile file\t - loads data from a CP file\n");
 	printf("\t--version\t - print version and exit\n");
