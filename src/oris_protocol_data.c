@@ -259,7 +259,7 @@ static void oris_protocol_data_write(const void* buf, size_t bufsize,
 	oris_protocol_t* protocol = ((oris_connection_t*) connection)->protocol;
 	oris_data_protocol_data_t* self = (oris_data_protocol_data_t*) protocol->data;
 	oris_data_request_t* request;
-	struct timeval response_timeout = { 2, 500000 }; /* 2.5 seconds */
+	struct timeval response_timeout = { 1, 000000 }; /* 1.0 seconds */
 
 	self->connection = connection;
 	if (self->state == IDLE) {
