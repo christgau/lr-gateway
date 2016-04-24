@@ -31,7 +31,7 @@ typedef struct oris_application_info {
 
 	bool paused;
 	int log_level;
-	char* dump_fn;
+	char* storage_fn;
 	char* config_fn;
 	char* cert_fn;
 

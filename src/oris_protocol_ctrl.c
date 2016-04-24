@@ -237,10 +237,16 @@ static void oris_builtin_cmd_dump(char* s, oris_application_info_t* info,
 	word_end(&s);
 
 	fn = next_word(&s);
-	if (oris_tables_dump_to_file(&info->data_tables, fn ? fn : info->dump_fn)) {
-		evbuffer_add_printf(out, "tables dumped to %s", fn ? fn : info->dump_fn);
+	fn = fn ? fn : info->storage_fn;
+	if (!fn) {
+		evbuffer_add_printf(out, "no file name given");
+		return;
+	}
+
+	if (oris_tables_dump_to_file(&info->data_tables, fn)) {
+		evbuffer_add_printf(out, "tables dumped to %s", fn);
 	} else {
-		evbuffer_add_printf(out, "could not dump to %s", fn ? fn : info->dump_fn);
+		evbuffer_add_printf(out, "could not dump to %s", fn);
 	}
 }
 

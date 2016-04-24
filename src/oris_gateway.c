@@ -66,6 +66,7 @@ int oris_print_usage(oris_application_info_t* info)
 	printf("\t--cert file\t - certificate for client authentication\n");
 	printf("\t--config file\t - use given file to read configuration\n");
 	printf("\t--datafile file\t - loads data from a CP file\n");
+	printf("\t--storage file\t - file to store received data (none by default)\n");
 	printf("\t--version\t - print version and exit\n");
 	printf("\t--help   \t - print this help\n");
 
@@ -85,6 +86,7 @@ bool oris_handle_args(oris_application_info_t *info)
 		{ "datafile", required_argument, NULL, 'd' },
 		{ "config", required_argument, NULL, 'c' },
 		{ "cert", required_argument, NULL, 'C' },
+		{ "storage", required_argument, NULL, 's' },
 /*		{ "logfile", no_argument, NULL, 'L' },*/
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
@@ -128,6 +130,9 @@ bool oris_handle_args(oris_application_info_t *info)
 			case 'C':
 				info->cert_fn = strdup(optarg);
 				break;
+			case 's':
+				info->storage_fn = strdup(optarg);
+				break;
 			case '?':
 			case 'h':
 				retval = true;
@@ -159,6 +164,7 @@ int main(int argc, char **argv)
 	info.argv = argv;
 	info.config_fn = NULL;
 	info.cert_fn = NULL;
+	info.storage_fn = NULL;
 
 	info.log_level = LOG_ERR;
 	oris_init_log(NULL, info.log_level);
