@@ -234,6 +234,13 @@ static void table_complete_cb(oris_table_t* tbl, oris_application_info_t* info)
 
 	oris_log_f(LOG_INFO, "table %s received (%d lines)", tbl->name, tbl->row_count);
 	oris_automation_trigger(&e, info);
+
+	if (info->storage_fn) {
+		oris_log_f(LOG_DEBUG, "dumping data tables to %s", info->storage_fn);
+		if (!oris_tables_dump_to_file(&info->data_tables, info->storage_fn)) {
+			oris_log_f(LOG_ERR, "failed to store gateway data tables");
+		}
+	}
 }
 
 void oris_protocol_data_connected_cb(struct oris_protocol* self)
