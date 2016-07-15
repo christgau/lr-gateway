@@ -10,7 +10,7 @@
 #define isblank(x) ((x) == ' ' || (x) == '\t')
 #endif
 
-#define ORIS_VERSION "0.5.0"
+#define ORIS_VERSION "0.6.0"
 #ifdef _WIN32
 #define ORIS_USER_AGENT ("orisgateway/"  ORIS_VERSION " (win32)")
 #else
