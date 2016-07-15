@@ -297,6 +297,10 @@ static void oris_perform_http_with_buffer(oris_application_info_t* info,
 	char* url_str;
     oris_parse_expr_t* url_expr;
 
+	if (info->paused) {
+		return;
+	}
+
 	url_expr = oris_expr_parse_from_tree(url);
 	url_str = oris_expr_as_string(url_expr);
 
