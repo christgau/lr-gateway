@@ -306,29 +306,28 @@ static void oris_protocol_data_idle_event_cb(evutil_socket_t fd, short type,
 	oris_data_request_t* request;
 	oris_data_protocol_data_t* self = (oris_data_protocol_data_t*) arg;
 
+	if (!(type == EV_TIMEOUT || type == EV_READ)) {
+		return;
+	}
+
+	self->state = IDLE;
+
+	if (type == EV_TIMEOUT) {
+		oris_log_f(LOG_DEBUG, "change connection to idle state due to "
+			"missing or timedout reponse");
+	}
+
 	if (STAILQ_EMPTY(&self->outstanding_requests)) {
 		return;
 	}
 
-	if (type == EV_TIMEOUT) {
-		self->state = IDLE;
-		oris_log_f(LOG_DEBUG, "change connection to idle state due to "
-				"missing or timedout reponse");
-	}
-
 	request = STAILQ_FIRST(&self->outstanding_requests);
-	if (self->state != IDLE) {
-		oris_log_f(LOG_DEBUG, "connection not idle, waiting for next chance");
-		return;
-	}
-
 	STAILQ_REMOVE_HEAD(&self->outstanding_requests, queue);
 	oris_protocol_data_write(request->message, request->size, self->connection,
 		((oris_connection_t*) self->connection)->write);
 
 	/* keep compiler happy */
 	(void) fd;
-	(void) type;
 	return;
 }
 
