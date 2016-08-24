@@ -241,6 +241,7 @@ void oris_config_add_target(oris_application_info_t* config, const char* name, c
 			target->name = strdup(name);
 			target->uri = evuri;
 			target->enabled = true;
+			target->compress = config->compress_http;
 			target->auth_header_value = NULL;
 
 			oris_set_http_target_auth_header(target);

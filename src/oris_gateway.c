@@ -67,6 +67,7 @@ int oris_print_usage(oris_application_info_t* info)
 	printf("\t--config file\t - use given file to read configuration\n");
 	printf("\t--datafile file\t - loads data from a CP file\n");
 	printf("\t--storage file\t - file to store received data (none by default)\n");
+	printf("\t--compress\t - use HTTP deflate content encoding\n");
 	printf("\t--version\t - print version and exit\n");
 	printf("\t--help   \t - print this help\n");
 
@@ -84,6 +85,7 @@ bool oris_handle_args(oris_application_info_t *info)
 		{ "version", no_argument, NULL, 'V' },
 		{ "loglevel", required_argument, NULL, 'l' },
 		{ "datafile", required_argument, NULL, 'd' },
+		{ "compress", no_argument, NULL, 'z' },
 		{ "config", required_argument, NULL, 'c' },
 		{ "cert", required_argument, NULL, 'C' },
 		{ "storage", required_argument, NULL, 's' },
@@ -132,6 +134,9 @@ bool oris_handle_args(oris_application_info_t *info)
 				break;
 			case 's':
 				info->storage_fn = strdup(optarg);
+				break;
+			case 'z':
+				info->compress_http = true;
 				break;
 			case '?':
 			case 'h':

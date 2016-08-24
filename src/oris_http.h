@@ -18,6 +18,7 @@ typedef struct oris_http_target {
 	SSL* ssl;
 	bool enabled;
 	char* auth_header_value;
+	bool compress;
 } oris_http_target_t;
 
 void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,

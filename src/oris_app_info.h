@@ -19,6 +19,7 @@ typedef struct oris_application_info {
 	oris_table_list_t data_tables;
 	oris_connection_list_t connections;
 	SSL_CTX* ssl_ctx;
+	bool compress_http;
 
 	struct {
 		oris_http_target_t* items;

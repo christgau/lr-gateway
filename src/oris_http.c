@@ -9,13 +9,19 @@
 #include "oris_util.h"
 #include "oris_http.h"
 
+#include "zlib.h"
+
 #ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable: 4706 )
 #endif
 
+/* limit for deflate body compression */
+#define HTTP_DEFLATE_LIMIT 128
+
 static void http_request_done_cb(struct evhttp_request *req, void *ctx);
 static void http_connection_close(struct evhttp_connection *con, void *ctx);
+static bool http_compress_body(struct evbuffer *body);
 static const char* oris_get_http_method_string(const enum evhttp_cmd_type method);
 
 /* taken from libevent https-client sample */
@@ -112,6 +118,44 @@ static const char* oris_get_http_method_string(const enum evhttp_cmd_type method
 	}
 }
 
+static bool http_compress_body(struct evbuffer *body)
+{
+	size_t body_size, compress_size;
+	unsigned char* body_data;
+
+	/* add buffer space for compression */
+	body_size = evbuffer_get_length(body);
+	if (body_size < HTTP_DEFLATE_LIMIT) {
+		return false;
+	}
+
+	compress_size = compressBound(body_size);
+	if (evbuffer_expand(body, compress_size)) {
+		oris_log_f(LOG_ERR, "buffer expansion failed");
+		return false;
+	}
+
+	/* make sure evbuffer is contignous */
+	body_data = evbuffer_pullup(body, -1);
+	if (!body_data) {
+		oris_log_f(LOG_ERR, "buffer pullup failed");
+		return false;
+	}
+
+	/* compress and discard uncompressed data */
+	if (compress(body_data + body_size, &compress_size, body_data, body_size) != Z_OK) {
+	oris_log_f(LOG_ERR, "could not compress http payload");
+		return false;
+	}
+
+	oris_log_f(LOG_DEBUG, "compressed HTTP body from %ld to %ld bytes (%d%% saving)",
+			body_size, compress_size, 100 - compress_size * 100 / body_size);
+	evbuffer_drain(body, body_size);
+
+	return true;
+}
+
+
 #define MAX_URL_SIZE 256
 
 void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
@@ -151,6 +195,9 @@ void oris_perform_http_on_targets(oris_http_target_t* targets, int target_count,
 					targets[i].uri), uri);
 
 			if (method == EVHTTP_REQ_PUT || method == EVHTTP_REQ_POST) {
+				if (targets[i].compress && http_compress_body(body)) {
+					evhttp_add_header(output_headers, "Content-Encoding", "deflate");
+				}
 				output_buffer = evhttp_request_get_output_buffer(request);
 				evbuffer_add_buffer_reference(output_buffer, body);
 			}
