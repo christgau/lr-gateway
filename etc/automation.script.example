@@ -2,12 +2,12 @@
 # vim: set filetype=conf shiftwidth=4 tabexpand
 
 connections:
-    datafeed: "data://sport.example.com:2317"
+    datafeed: "data://192.168.12.51:3000"
     control: "ctrl://*:4422"
 	;
 
 targets:
-    testing: "http://liveresults.www.example.com/"
+    testing: "http://localhost:4616"
 	;
 
 on connection established:
@@ -48,7 +48,7 @@ on table log:
 
 on table stt:
 	if ({STT.3} == 6) http delete ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/startlist");
-	if ({STT.3} == 0) http delete ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/result");
+	if ({STT.3} == 0) http delete ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/results");
 	http put ("/event/" + {VER.1} + "/comp/" + {STT.1} + "/state") with value {STT.3};
 	iterate vrd:
 		if ({VRD.1} == {STT.1}) update vrd set field (10) = {STT.3};
