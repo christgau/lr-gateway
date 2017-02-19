@@ -54,7 +54,7 @@ on table stt:
 		if ({VRD.1} == {STT.1}) update vrd set field (10) = {STT.3};
 	end;
 	# create final result items
-	if ({STT.3} == 3) copy table "STA_" + {VER.1} + "_" + {STA!.1} to "STA_R";
+	if ({STT.3} == 3) copy table "STA_" + {VER.1} + "_" + {STT.1} to "STA_R";
 	if ({STT.3} == 3) iterate STA_R:
 		if {STA_R.1} >= 1 request final_split_result;
 	end;
