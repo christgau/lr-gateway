@@ -25,9 +25,17 @@
 #include "oris_app_info.h"
 #include "oris_socket_connection.h"
 
-#ifndef _WIN32
+#if defined(__linux__)
 #define SSL_CERT_PATH "/etc/ssl/certs/ca-certificates.crt"
+#elif defined(__FreeBSD__)
+#define SSL_CERT_PATH "/etc/ssl/cert.pem"
+#elif defined(_WIN32)
+/* noop */
 #else
+#error Unsupporting operating system
+#endif
+
+#ifdef _WIN32
 #define snprintf _snprintf
 #endif
 

@@ -1,13 +1,11 @@
-CC?=gcc
-AR=ar
 RM=rm -rf
-ANTLR=antlr3
+PREFIX?=$(HOME)
 
-INCLUDEPATHS=-I$(HOME)/include -I. -I./deps/mempool -I./grammars
+INCLUDEPATHS=-I$(PREFIX)/include -I. -I./deps/mempool -I./grammars
 WARNFLAGS=-Wall -Wextra
-CFLAGS=-g -O0 $(INCLUDEPATHS) -Wall -Wextra -std=c99 -D_GNU_SOURCE
+CFLAGS=-g -O0 -std=c99 -D_GNU_SOURCE $(INCLUDEPATHS) $(WARNFLAGS)
 
-LDFLAGS=-g -lz -levent -levent_openssl -L$(HOME)/lib -L$(ANTLR) -lantlr3c $(shell pkg-config --libs openssl)
+LDFLAGS=-g -lz -levent -levent_openssl -lantlr3c -L$(PREFIX)/lib -lssl -lcrypto
 
 TARGET=gateway
 MAINFILE=oris_gateway.c
@@ -29,8 +27,8 @@ SOURCES=\
 	deps/mempool/mem_pool.c \
 	grammars/oris_interpret_tools.c
 
-OBJECTS=$(patsubst %.c,%.o,$(SOURCES))
-HEADERS=$(patsubst %.c,%.h,$(SOURCES))
+OBJECTS=$(SOURCES:.c=.o)
+HEADERS=$(SOURCES:.c=.h)
 
 GRAMMARS_DIR=./grammars
 GRAMMAR_SRC=\
@@ -46,11 +44,11 @@ all: $(GRAMMAR_ARCHIVE) $(TARGET)
 
 %.o: %.c %.h
 	@echo "CC    $<"
-	@$(CC) $(WARNFLAGS) $(CFLAGS) -c $< -o $@ #>/dev/null
+	@$(CC) $(CFLAGS) -c $< -o $@ #>/dev/null
 
 $(TARGET): $(MAINFILE) $(OBJECTS) $(HEADERS) $(GRAMMAR_ARCHIVE)
 	@echo "CCLD  $@"
-	@$(CC) $(WARNFLAGS) $(CFLAGS) $(LDFLAGS) $< $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
+	@$(CC) $(CFLAGS) $(LDFLAGS) $(MAINFILE) $(OBJECTS) $(GRAMMAR_ARCHIVE) -o $@
 
 grammars: $(GRAMMARS_DIR)/*.g
 	$(MAKE) -C $(GRAMMARS_DIR) grammars
@@ -59,7 +57,7 @@ $(GRAMMAR_ARCHIVE): $(GRAMMAR_SRC)
 	# $(MAKE) $(patsubst %.c,%.o,$(GRAMMAR_SRC))
 	#for FILE in $(GRAMMAR_SRC); do $(MAKE) `echo $$FILE | sed s/\.c$$/.o/`; done
 	for FILE in $(GRAMMAR_SRC); do $(CC) $(CFLAGS) -c $$FILE -o `echo $$FILE | sed s/\.c$$/.o/`; done
-	$(AR) cr $@ $(patsubst %.c,%.o,$(GRAMMAR_SRC))
+	$(AR) cr $@ $(GRAMMAR_SRC:.c=.o)
 
 check:
 	find . -name '*.c' -and -not -name 'config*' -print0 | xargs -0 -I% clang-check -analyze % -- $(INCLUDEPATHS)
