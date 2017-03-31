@@ -38,7 +38,7 @@ GRAMMAR_SRC=\
 
 GRAMMAR_ARCHIVE=$(GRAMMARS_DIR)/config.ar
 
-.PHONY: clean check check-clean memcheck
+.PHONY: clean check check-clean memcheck install uninstall
 
 all: $(GRAMMAR_ARCHIVE) $(TARGET)
 
@@ -74,6 +74,12 @@ clean:
 	$(RM) $(OBJECTS)
 	$(RM) $(GRAMMAR_ARCHIVE)
 	$(RM) tags
+
+install: $(TARGET)
+	install -m 0755 $(TARGET) $(PREFIX)/bin
+
+uninstall:
+	rm -f $(PREFIX)/bin/$(TARGET)
 
 tags: $(SOURCES)
 	ctags -RV *
