@@ -45,9 +45,6 @@ static const char* cert_locations[] = {
 #define snprintf _snprintf
 #endif
 
-#define ORIS_DEFAULT_HTTP_PASSWORD "C57yec34kpza86g4"
-#define ORIS_DEFAULT_HTTP_USER "oris"
-
 /* forwards */
 static void oris_targets_clear(oris_http_target_t* targets, int *count);
 static void oris_set_http_target_auth_header(oris_http_target_t* target);
