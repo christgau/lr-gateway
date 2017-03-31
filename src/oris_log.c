@@ -127,6 +127,7 @@ void oris_log_ssl_error(int severity)
 {
 	if (logFile && severity <= logLevel) {
 		oris_log_time();
+		oris_log_severity(severity);
 		ERR_print_errors_fp(logFile);
 	}
 }
