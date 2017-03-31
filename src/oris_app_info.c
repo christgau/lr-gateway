@@ -30,9 +30,9 @@
 static const char* cert_locations[] = {
 	"/etc/ssl/certs/ca-certificates.crt",
 	"/etc/ssl/ca-bundle.pem",
-	"/etc/ssl/cert.pem"
+	"/etc/ssl/cert.pem",
 	"/etc/pki/tls/certs/ca-bundle.crt",
-	"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+	"/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem",
 	"/etc/pki/tls/cacert.pem",
 };
 #elif defined(_WIN32)
@@ -139,7 +139,7 @@ static bool oris_init_ssl(struct oris_application_info* info)
 
 	for (size_t i = 0; i < sizeof(cert_locations)/sizeof(*cert_locations); i++) {
 		oris_log_f(LOG_DEBUG, "trying to load SSL certificates from %s", cert_locations[i]);
-		ssl_loaded = SSL_CTX_load_verify_locations(info->ssl_ctx, cert_locations[i], NULL) != 1;
+		ssl_loaded = SSL_CTX_load_verify_locations(info->ssl_ctx, cert_locations[i], NULL) == 1;
 		if (!ssl_loaded) {
 			oris_log_f(LOG_DEBUG, "could not load certificates");
 			oris_log_ssl_error(LOG_DEBUG);
