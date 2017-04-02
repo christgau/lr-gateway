@@ -14,6 +14,7 @@
 #include <openssl/ssl.h>
 
 /* main application state and configuration is held herein */
+
 typedef struct oris_application_info {
 	oris_libevent_base_info_t libevent_info;
 	oris_table_list_t data_tables;
@@ -33,7 +34,6 @@ typedef struct oris_application_info {
 	bool paused;
 	int log_level;
 	char* storage_fn;
-	char* config_fn;
 	char* cert_fn;
 
 	int argc;

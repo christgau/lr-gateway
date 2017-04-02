@@ -10,6 +10,9 @@
 #include "oris_automation_types.h"
 #include "oris_table.h"
 
+/* add a filename to the internal list of config files */
+void oris_add_config_file(const char* filename);
+
 /* load configuration from the config file */
 bool oris_load_configuration(oris_application_info_t* info);
 

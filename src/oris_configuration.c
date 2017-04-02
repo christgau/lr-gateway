@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <errno.h>
 
+#include <sys/queue.h>
+
 #include "oris_libevent.h"
 #include <antlr3treeparser.h>
 #include <event2/http.h>
@@ -13,22 +15,25 @@
 #include "grammars/configParser.h"
 #include "grammars/configTree.h"
 
-#ifdef _WIN32
-#include <stdlib.h>
-#include <string.h>
-#define PATH_DELIMITER '\\'
-#define CONFIG_SUBPATH ""
-#define snprintf _snprintf
-#else
-#define PATH_DELIMITER '/'
-#define CONFIG_SUBPATH "/etc"
-#endif /* _WINDOWS */
+/* configuration file list */
+static STAILQ_HEAD(config_file_list_head, oris_config_file) config_files =
+	STAILQ_HEAD_INITIALIZER(config_files);
 
-const char* ORIS_GW_CFG_DEFAULT_FILENAME = "automation.script";
+typedef struct oris_config_file {
+	char* name;
+	STAILQ_ENTRY(oris_config_file) entries;
+} oris_config_file_t;
 
-#ifndef MAX_PATH
-#define MAX_PATH 256
-#endif /* MAX_PATH */
+void oris_add_config_file(const char* filename)
+{
+	oris_config_file_t* config_file = calloc(1, sizeof(oris_config_file_t));
+	config_file->name = strdup(filename);
+	if (!STAILQ_EMPTY(&config_files)) {
+		STAILQ_INSERT_TAIL(&config_files, config_file, entries);
+	} else {
+		STAILQ_INSERT_HEAD(&config_files, config_file, entries);
+	}
+}
 
 typedef struct {
 	oris_automation_event_t event;
@@ -36,30 +41,10 @@ typedef struct {
 	pANTLR3_COMMON_TREE_NODE_STREAM node_stream;
 } oris_automation_action_t;
 
-void oris_get_config_filename(char* buffer, size_t bufsize)
-{
-#ifdef _WIN32
-	char *s;
-	if (_get_pgmptr(&s) == 0) {
-		strncpy(buffer, s, bufsize);
-		s = strrchr(buffer, PATH_DELIMITER);
-		if (s) {
-			*s = '\0';
-		}
-	} else {
-		*buffer = '\0';
-	}
-#else
-	*buffer = '\0';
-	strncpy(buffer, getenv("HOME"), bufsize);
-#endif
-	bufsize -= strlen(buffer);
-	snprintf(buffer + strlen(buffer), bufsize, "%s%c%s", CONFIG_SUBPATH, PATH_DELIMITER, ORIS_GW_CFG_DEFAULT_FILENAME);
-}
-
 static pANTLR3_BASE_TREE get_subtree_by_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type);
 static pANTLR3_LIST get_nodes_of_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type, pANTLR3_LIST result);
 static void collect_automation_nodes(pANTLR3_BASE_TREE root_tree);
+static bool oris_load_config_file(oris_application_info_t* info, const char* filename);
 
 static size_t automation_events_count;
 static oris_automation_action_t* automation_events;
@@ -78,17 +63,40 @@ static struct {
 
 bool oris_load_configuration(oris_application_info_t* info)
 {
-	char fname[MAX_PATH];
+	bool retval = true;
+
+	if (!STAILQ_EMPTY(&config_files)) {
+		oris_config_file_t* item = STAILQ_FIRST(&config_files);
+		while (item) {
+			oris_config_file_t* tmp = STAILQ_NEXT(item, entries);
+
+			if (retval) {
+				if (!oris_load_config_file(info, item->name)) {
+					oris_log_f(LOG_ERR, "error in configuration file %s", item->name);
+					retval = false;
+				}
+			}
+			STAILQ_REMOVE(&config_files, item, oris_config_file, entries);
+			free(item->name);
+			free(item);
+
+			item = tmp;
+		}
+	} else {
+		oris_log_f(LOG_WARNING, "no configuration file(s) given");
+	}
+
+	return retval;
+}
+
+static bool oris_load_config_file(oris_application_info_t* info, const char* filename)
+{
 	pANTLR3_BASE_TREE configTree, tree;
 	pconfigTree walker;
 
-	memset(fname, 0, sizeof(fname));
-	oris_get_config_filename(fname, MAX_PATH - 1);
-	oris_log_f(LOG_DEBUG, "loading configuration from: %s.",
-		(info->config_fn ? info->config_fn : fname));
+	oris_log_f(LOG_DEBUG, "loading configuration from: %s.", filename);
 
-	parsing_state.input = antlr3FileStreamNew((pANTLR3_UINT8)
-		(info->config_fn ? info->config_fn : (char*) &fname), ANTLR3_ENC_UTF8);
+	parsing_state.input = antlr3FileStreamNew((pANTLR3_UINT8) filename, ANTLR3_ENC_UTF8);
 	if (parsing_state.input == NULL) {
 		return false;
 	}

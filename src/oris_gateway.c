@@ -61,15 +61,15 @@ int oris_main_print_version(oris_application_info_t *info)
 int oris_print_usage(oris_application_info_t* info)
 {
 	printf("usage %s [options]\n\n", info->argv[0]);
-	printf("options: \n\t--verbose\t - verbose output (same as info loglevel)\n");
-	printf("\t--loglevel level - sets the loglevel to error, warn, info or debug\n");
-	printf("\t--cert file\t - certificate for client authentication\n");
-	printf("\t--config file\t - use given file to read configuration\n");
-	printf("\t--datafile file\t - loads data from a CP file\n");
-	printf("\t--storage file\t - file to store received data (none by default)\n");
-	printf("\t--compress\t - use HTTP deflate content encoding\n");
-	printf("\t--version\t - print version and exit\n");
-	printf("\t--help   \t - print this help\n");
+	printf("options: \n\t-v, --verbose\t - verbose output (same as info loglevel)\n");
+	printf("\t-l, --loglevel=level - sets the loglevel to error, warn, info or debug\n");
+	printf("\t-C, --cert=file\t - certificate for client authentication\n");
+	printf("\t-c, --config=file\t - use given file to read configuration (use multiple times)\n");
+	printf("\t-d, --datafile=file\t - loads data from a CP file\n");
+	printf("\t-s, --storage=file\t - file to store received data (none by default)\n");
+	printf("\t-z, --compress\t - use HTTP deflate content encoding\n");
+	printf("\t-V, --version\t - print version and exit\n");
+	printf("\t-h, --help   \t - print this help\n");
 
 	return EXIT_FAILURE;
 }
@@ -127,7 +127,7 @@ bool oris_handle_args(oris_application_info_t *info)
 				oris_tables_load_from_file(&info->data_tables, optarg);
 				break;
 			case 'c':
-				info->config_fn = strdup(optarg);
+				oris_add_config_file(optarg);
 				break;
 			case 'C':
 				info->cert_fn = strdup(optarg);
@@ -167,7 +167,6 @@ int main(int argc, char **argv)
 	memset(&info, 0, sizeof(info));
 	info.argc = argc;
 	info.argv = argv;
-	info.config_fn = NULL;
 	info.cert_fn = NULL;
 	info.storage_fn = NULL;
 

@@ -204,7 +204,6 @@ void oris_app_info_finalize(oris_application_info_t* info)
 	event_base_free(info->libevent_info.base);
 
 	oris_free_and_null(info->cert_fn);
-	oris_free_and_null(info->config_fn);
 
 	oris_finalize_ssl(info);
 }
