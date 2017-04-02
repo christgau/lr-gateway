@@ -37,7 +37,7 @@ configuration[oris_application_info_t* value]
 	@after {
 		in_configuration = false;
 	}
-	: ^(CONFIG connections[value] targets[value] )
+	: ^(CONFIG connections[value]? targets[value]? )
 	;
 
 connections[oris_application_info_t* info]

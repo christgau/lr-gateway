@@ -56,7 +56,7 @@ tokens {
 }
 
 configuration
-    : connections targets (event)* (template_definition)* (requests_definition)? -> ^(CONFIG connections targets) ^(AUTOMATION event*) ^(TEMPLATES template_definition*) requests_definition?
+    : connections? targets? (event)* (template_definition)* (requests_definition)? -> ^(CONFIG connections? targets?) ^(AUTOMATION event*) ^(TEMPLATES template_definition*) requests_definition?
     ;
 
 connections
