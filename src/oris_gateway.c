@@ -26,7 +26,7 @@ int oris_main_default(oris_application_info_t *info)
 	}
 
 	if (info->connections.count == 0) {
-		oris_log_f(LOG_ERR, "no connections available. Exiting.\n");
+		oris_log_f(LOG_ERR, "no connections available. Exiting.");
 		return EXIT_FAILURE;
 	}
 
@@ -62,7 +62,8 @@ int oris_print_usage(oris_application_info_t* info)
 {
 	printf("usage %s [options]\n\n", info->argv[0]);
 	printf("options: \n\t-v, --verbose\t - verbose output (same as info loglevel)\n");
-	printf("\t-l, --loglevel=level - sets the loglevel to error, warn, info or debug\n");
+	printf("\t-l, --loglevel=level\t - sets the loglevel to error, warn, info or debug\n");
+	printf("\t-L, --logfile=file\t - write log information to given file (stdout by default)\n");
 	printf("\t-C, --cert=file\t - certificate for client authentication\n");
 	printf("\t-c, --config=file\t - use given file to read configuration (use multiple times)\n");
 	printf("\t-d, --datafile=file\t - loads data from a CP file\n");
@@ -89,12 +90,12 @@ bool oris_handle_args(oris_application_info_t *info)
 		{ "config", required_argument, NULL, 'c' },
 		{ "cert", required_argument, NULL, 'C' },
 		{ "storage", required_argument, NULL, 's' },
-/*		{ "logfile", no_argument, NULL, 'L' },*/
+		{ "logfile", required_argument, NULL, 'L' },
 		{ "help", no_argument, NULL, 'h' },
 		{ NULL, 0, NULL, 0 }
 	};
 
-	const char* short_opt_str = "vVl:d:c:C:h?";
+	const char* short_opt_str = "vVl:d:c:C:s:zL:h?";
 
 	opt_code = getopt_long(info->argc, info->argv, short_opt_str, long_opts, &opt_idx);
 	while (opt_code != -1) {
@@ -122,6 +123,9 @@ bool oris_handle_args(oris_application_info_t *info)
 					retval = true;
 				}
 				oris_init_log(NULL, info->log_level);
+				break;
+			case 'L':
+				oris_init_log(optarg, info->log_level);
 				break;
 			case 'd':
 				oris_tables_load_from_file(&info->data_tables, optarg);
