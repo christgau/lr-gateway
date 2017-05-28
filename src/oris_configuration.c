@@ -65,6 +65,9 @@ bool oris_load_configuration(oris_application_info_t* info)
 {
 	bool retval = true;
 
+	automation_events = NULL;
+	automation_events_count = 0;
+
 	if (!STAILQ_EMPTY(&config_files)) {
 		oris_config_file_t* item = STAILQ_FIRST(&config_files);
 		while (item) {
@@ -149,7 +152,6 @@ static bool oris_load_config_file(oris_application_info_t* info, const char* fil
 	parsing_state.node_stream->free(parsing_state.node_stream);
 	parsing_state.node_stream = antlr3CommonTreeNodeStreamNewTree(parsing_state.automationTree, ANTLR3_SIZE_HINT);
 
-	automation_events = NULL;
 	collect_automation_nodes(parsing_state.automationTree);
 
 	return true;
@@ -298,21 +300,26 @@ static oris_automation_event_t parse_automation_object_node(pANTLR3_BASE_TREE ob
 static void collect_automation_nodes(pANTLR3_BASE_TREE root_tree)
 {
     pANTLR3_BASE_TREE event, object;
-	ANTLR3_UINT32 i;
+	ANTLR3_UINT32 i, e_count;
 
-    automation_events_count = root_tree->getChildCount(root_tree);
-	automation_events = calloc(automation_events_count, sizeof(*automation_events));
-    for (i = 0; i < automation_events_count; i++) {
+
+    e_count = root_tree->getChildCount(root_tree);
+    oris_log_f(LOG_DEBUG, "loading %d automation actions", e_count);
+	automation_events = realloc(automation_events, (automation_events_count + e_count) * sizeof(*automation_events));
+
+    for (i = 0; i < e_count; i++) {
 		event = root_tree->getChild(root_tree, i);
 		/* we rely on the parse tree to look like: (EVENT (object) OPERATIONS (...)) */
 		if (event->getChildCount(event) == 0) continue;
 
 		object = event->getChild(event, 0);
-		automation_events[i].event = parse_automation_object_node(object);
-		automation_events[i].tree = event->getChild(event, 1);
-		automation_events[i].node_stream = antlr3CommonTreeNodeStreamNewTree(
-			automation_events[i].tree, ANTLR3_SIZE_HINT);
+		automation_events[i + automation_events_count].event = parse_automation_object_node(object);
+		automation_events[i + automation_events_count].tree = event->getChild(event, 1);
+		automation_events[i + automation_events_count].node_stream = antlr3CommonTreeNodeStreamNewTree(
+			automation_events[i + automation_events_count].tree, ANTLR3_SIZE_HINT);
 	}
+
+    automation_events_count += e_count;
 }
 
 bool oris_get_automation_parse_tree(oris_automation_event_t ev,
