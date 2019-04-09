@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 /* important include order: antlrdefs includes socket stuff! */
 #include "oris_libevent.h"

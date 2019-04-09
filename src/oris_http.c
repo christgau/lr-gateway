@@ -1,3 +1,4 @@
+#include <string.h>
 #include <errno.h>
 
 #include <event2/bufferevent_ssl.h>
