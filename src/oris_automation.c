@@ -407,11 +407,11 @@ void oris_automation_copy_table(oris_application_info_t* info,
 	char* dst_name = oris_expr_as_string(dst);
 	oris_table_t *src_tbl, *dst_tbl;
 
-	if ((src_tbl = oris_get_table(&info->data_tables, src_name)) == NULL) {
+	if ((dst_tbl = oris_get_or_create_table(&info->data_tables, dst_name, true)) == NULL) {
 		goto cleanup;
 	}
 
-	if ((dst_tbl = oris_get_or_create_table(&info->data_tables, dst_name, true)) == NULL) {
+	if ((src_tbl = oris_get_table(&info->data_tables, src_name)) == NULL) {
 		goto cleanup;
 	}
 
