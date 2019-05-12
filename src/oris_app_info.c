@@ -123,7 +123,12 @@ static bool oris_init_ssl(struct oris_application_info* info)
 
 	OpenSSL_add_all_algorithms();
 
-       info->ssl_ctx = SSL_CTX_new(TLS_method());
+#if (OPENSSL_VERSION_NUMBER >=  0x10100000L)
+	info->ssl_ctx = SSL_CTX_new(TLS_method());
+#else
+	info->ssl_ctx = SSL_CTX_new(TLSv1_2_method());
+#endif
+
 	if (!info->ssl_ctx) {
 		oris_log_f(LOG_CRIT, "could not create SSL context");
 		oris_log_ssl_error(LOG_CRIT);
@@ -178,6 +183,9 @@ static void oris_finalize_ssl(oris_application_info_t* info)
 {
 	SSL_CTX_free(info->ssl_ctx);
 
+#if (OPENSSL_VERSION_NUMBER <=  0x10100000L)
+	ERR_remove_state(0);
+#endif
 	ENGINE_cleanup();
 	CONF_modules_unload(1);
 
