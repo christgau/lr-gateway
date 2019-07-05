@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+# Simulator for rowing data feed
+
 from twisted.internet import reactor, protocol, task, stdio, defer
 from twisted.protocols import basic
 from random import randint, random
