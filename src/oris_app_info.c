@@ -118,8 +118,12 @@ static bool oris_init_libevent(struct oris_application_info *info)
 
 static bool oris_init_ssl(struct oris_application_info* info)
 {
+#if (OPENSSL_VERSION_NUMBER >= 0x101000000L)
+	OPENSSL_init_ssl()
+#else
 	SSL_load_error_strings();
 	SSL_library_init();
+#endif
 
 	OpenSSL_add_all_algorithms();
 
