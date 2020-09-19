@@ -1,5 +1,8 @@
 [Definition]
 HEATDEF=code;en;de
+SLUG=eid;slug
+
+[SLUG]
 
 [HEATDEF]
 A;Heat;Abteilung
