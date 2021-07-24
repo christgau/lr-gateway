@@ -42,8 +42,10 @@ tokens {
     HTTP='http';
     ITERATE='iterate';
     END = 'end';
-	UPDATE = 'update';
-	COPY = 'copy';
+    UPDATE = 'update';
+    COPY = 'copy';
+    INTERVAL = 'every';
+    SECONDS = 'seconds';
 
     COLON=':';
     SEMICOLON=';' ;
@@ -75,6 +77,7 @@ object
     : CONNECTION connection_state -> ^(CONNECTION connection_state)
     | TABLE^ IDENTIFIER
     | COMMAND^ STRING
+    | INTERVAL^ INTEGER SECONDS
     ;
 
 connection_state

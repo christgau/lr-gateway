@@ -19,6 +19,7 @@ options {
 #include "oris_connection.h"
 #include "oris_socket_connection.h"
 #include "oris_log.h"
+#include "oris_util.h"
 }
 
 @members {
@@ -60,10 +61,20 @@ event[oris_application_info_t* info, oris_automation_event_t* event]
 	: ^(EVENT o=object{ do_action = oris_is_same_automation_event(event, &o); } ^(OPERATIONS operations[info]))
 	;
 
+
 object returns [oris_automation_event_t event]
 	: ^(CONNECTION state=(ESTABLISHED|CLOSED)) { oris_init_automation_event(&event, EVT_CONNECTION, (const char*) $state.text->chars); }
 	| ^(TABLE name=IDENTIFIER) { oris_init_automation_event(&event, EVT_TABLE, (const char*) $name.text->chars); }
 	| ^(COMMAND cmd=STRING) { oris_init_automation_event(&event, EVT_COMMAND, (const char*) $cmd.text->chars); }
+	| ^(INTERVAL interval=INTEGER SECONDS)
+		{
+			unsigned int i = 0;
+			if (oris_strtoint((const char*) $interval.text->chars, &i) && i > 0) {
+				oris_init_automation_timer(&event, i);
+			} else {
+				oris_log_f(LOG_ERR, "invalid interval \%s", $interval.text->chars);
+			}
+		}
 	;
 
 operations [oris_application_info_t* info]

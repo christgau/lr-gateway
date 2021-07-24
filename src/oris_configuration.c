@@ -36,12 +36,6 @@ void oris_add_config_file(const char* filename)
 	}
 }
 
-typedef struct {
-	oris_automation_event_t event;
-	pANTLR3_BASE_TREE tree;
-	pANTLR3_COMMON_TREE_NODE_STREAM node_stream;
-} oris_automation_action_t;
-
 static pANTLR3_BASE_TREE get_subtree_by_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type);
 static pANTLR3_LIST get_nodes_of_type(pANTLR3_BASE_TREE tree, ANTLR3_UINT32 type, pANTLR3_LIST result);
 static void collect_automation_nodes(pANTLR3_BASE_TREE root_tree);
@@ -323,21 +317,16 @@ static void collect_automation_nodes(pANTLR3_BASE_TREE root_tree)
     automation_events_count += e_count;
 }
 
-bool oris_get_automation_parse_tree(oris_automation_event_t ev,
-	pANTLR3_BASE_TREE* tree, pANTLR3_COMMON_TREE_NODE_STREAM* stream)
+size_t oris_get_automation_event_count(void)
 {
-	size_t i;
-
-	for (i = 0; i < automation_events_count; i++) {
-		if (oris_is_same_automation_event(&automation_events[i].event, &ev)) {
-			*tree = automation_events[i].tree;
-			*stream = automation_events[i].node_stream;
-			return true;
-		}
-	}
-
-	*stream = NULL;
-	*tree = NULL;
-	return false;
+	return automation_events_count;
 }
 
+const oris_automation_action_t* oris_get_automation_event(size_t idx)
+{
+	if (idx < automation_events_count) {
+		return automation_events + idx;
+	} else {
+		return NULL;
+	}
+}

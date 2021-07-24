@@ -1,4 +1,5 @@
 #include <string.h>
+#include <event.h>
 
 #include "oris_util.h"
 #include "oris_log.h"
@@ -13,6 +14,8 @@
 static char* oris_parse_request_tree(const pANTLR3_BASE_TREE parse_tree);
 static char* oris_get_parsed_request(const char *name);
 
+static void timer_callback(evutil_socket_t fd, short what, void *arg);
+
 static void oris_perform_automation_actions(pANTLR3_BASE_TREE tree,
 	oris_application_info_t* info);
 static void oris_perform_automation_action(pANTLR3_BASE_TREE tree,
@@ -20,9 +23,16 @@ static void oris_perform_automation_action(pANTLR3_BASE_TREE tree,
 static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
 	oris_application_info_t* info);
 
+static struct event *timer_event;
+
 bool oris_automation_init(oris_application_info_t* app_info)
 {
 	(void) app_info;
+
+	struct timeval timeout = { 1, 0 };
+
+	timer_event = event_new(app_info->libevent_info.base, -1, EV_PERSIST, timer_callback, app_info);
+	event_add(timer_event, &timeout);
 
 	return true;
 }
@@ -32,10 +42,19 @@ void oris_automation_finalize()
 	return;
 }
 
-bool oris_is_same_automation_event(oris_automation_event_t* a, oris_automation_event_t* b)
+bool oris_is_same_automation_event(const oris_automation_event_t* a, const oris_automation_event_t* b)
 {
-	return a && b && a->type == b->type &&
-		a->name && b->name && strcasecmp(a->name, b->name) == 0;
+	bool retval = a && b && a->type == b->type;
+
+	if (retval) {
+		if (a->type == EVT_TIMER) {
+			retval = a->interval == b->interval;
+		} else {
+			retval = a->name && b->name && strcasecmp(a->name, b->name) == 0;
+		}
+	}
+
+	return retval;
 }
 
 
@@ -48,6 +67,14 @@ void oris_init_automation_event(oris_automation_event_t* event,
 	}
 }
 
+void oris_init_automation_timer(oris_automation_event_t* event,
+		unsigned int interval)
+{
+	if (event && interval > 0) {
+		event->type = EVT_TIMER;
+		event->interval = interval;
+	}
+}
 
 void oris_free_automation_event(oris_automation_event_t* event)
 {
@@ -59,14 +86,34 @@ void oris_free_automation_event(oris_automation_event_t* event)
 
 void oris_automation_trigger(oris_automation_event_t* event, oris_application_info_t *info)
 {
-	pANTLR3_BASE_TREE tree;
-	pANTLR3_COMMON_TREE_NODE_STREAM stream;
-
-	if (!event || !event->name || !oris_get_automation_parse_tree(*event, &tree, &stream)) {
+	if (!event || (event->type != EVT_TIMER && !event->name)) {
 		return;
 	}
 
-	oris_perform_automation_actions(tree, info);
+	for (size_t i = 0; i < oris_get_automation_event_count(); i++) {
+	    const oris_automation_action_t *e = oris_get_automation_event(i);
+		if (oris_is_same_automation_event(&(e->event), event)) {
+			oris_perform_automation_actions(e->tree, info);
+		}
+	}
+}
+
+static void timer_callback(evutil_socket_t fd, short what, void *arg)
+{
+	static int seconds_elapsed = 0;
+	oris_application_info_t* info = (oris_application_info_t*) arg;
+
+	(void) fd;
+	(void) what;
+
+	seconds_elapsed++;
+
+	for (size_t i = 0; i < oris_get_automation_event_count(); i++) {
+	    const oris_automation_action_t *e = oris_get_automation_event(i);
+		if (e->event.type == EVT_TIMER && seconds_elapsed % e->event.interval == 0) {
+			printf("triggering event with period %d at %d\n", e->event.interval, seconds_elapsed);
+		}
+	}
 }
 
 static void oris_perform_automation_actions(pANTLR3_BASE_TREE tree,
@@ -91,7 +138,7 @@ static void oris_perform_automation_iterate(pANTLR3_BASE_TREE tree,
 	pANTLR3_BASE_TREE name_node = tree->getChild(tree, 0);
 	pANTLR3_BASE_TREE action_tree = tree->getChild(tree, 1);
 	pANTLR3_BASE_TREE cond_expr_tree = tree->getChild(tree, 2);
-	oris_table_t* tbl = oris_get_table(&info->data_tables, 
+	oris_table_t* tbl = oris_get_table(&info->data_tables,
 		(const char*) name_node->getText(name_node)->chars);
 	int row;
 
