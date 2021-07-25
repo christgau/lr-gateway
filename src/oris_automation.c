@@ -111,7 +111,9 @@ static void timer_callback(evutil_socket_t fd, short what, void *arg)
 	for (size_t i = 0; i < oris_get_automation_event_count(); i++) {
 	    const oris_automation_action_t *e = oris_get_automation_event(i);
 		if (e->event.type == EVT_TIMER && seconds_elapsed % e->event.interval == 0) {
-			printf("triggering event with period %d at %d\n", e->event.interval, seconds_elapsed);
+			oris_log_f(LOG_DEBUG, "triggering event with period %d at %d s after startup\n",
+				e->event.interval, seconds_elapsed);
+			oris_perform_automation_action(e->tree->getChild(e->tree, 0), info);
 		}
 	}
 }
